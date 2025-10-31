@@ -105,11 +105,11 @@ contract Ping is AccessControl {
     /// @notice Emitted when fees are collected for the protocol-owned LP token
     event FeesCollected(address recipient, uint256 amountToken0, uint256 amountToken1);
 
-    /// @notice Constant sqrtPriceX96 when payment token precedes Ping-2.sol token
-    uint160 public constant SQRT_PRICE_PAYMENT_TOKEN_FIRST = 5602277097478614411626293834203267072;
+    /// @notice Constant sqrtPriceX96 when payment token precedes Ping-2.sol token (1:1 price ratio)
+    uint160 public constant SQRT_PRICE_PAYMENT_TOKEN_FIRST = 79228162514264337593543950336;
 
-    /// @notice Constant sqrtPriceX96 when Ping-2.sol token precedes payment token
-    uint160 public constant SQRT_PRICE_PING_FIRST = 1120455419495722778624;
+    /// @notice Constant sqrtPriceX96 when Ping-2.sol token precedes payment token (1:1 price ratio)
+    uint160 public constant SQRT_PRICE_PING_FIRST = 79228162514264337593543950336;
 
     /// @notice Cached sorted token ordering flag (true when payment token < Ping-2.sol)
     bool internal immutable PAYMENT_TOKEN_IS_TOKEN0;
