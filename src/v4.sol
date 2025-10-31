@@ -2,7 +2,6 @@
 // Compatible with OpenZeppelin Contracts ^5.4.0
 pragma solidity ^0.8.26;
 
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
@@ -20,7 +19,7 @@ import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract Ping is ERC20, ERC20Burnable, AccessControl {
+contract Ping is AccessControl {
     /// @notice The error thrown when the array length mismatch
     error ArrayLengthMismatch();
     /// @notice The error thrown when the tx hash has already been minted
@@ -71,10 +70,10 @@ contract Ping is ERC20, ERC20Burnable, AccessControl {
     address public constant NEW_TOKEN = 0x0A3728E805073E5Aaf6755C872336c50b27114Ed;
 
     /// @notice The total payment token amount for liquidity pool seeding
-    uint256 public constant PAYMENT_SEED = 100000000; //todo ???
+    uint256 public constant PAYMENT_SEED = 1000000; //todo ???
 
     /// @notice The pool seed amount (PING tokens for liquidity)
-    uint256 public constant POOL_SEED_AMOUNT = 100000000; //todo ????
+    uint256 public constant POOL_SEED_AMOUNT = 1000000; //todo ????
 
     /// @notice The amount of tokens to mint in the batch
 //    uint256 internal immutable MINT_AMOUNT;
@@ -119,7 +118,7 @@ contract Ping is ERC20, ERC20Burnable, AccessControl {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     constructor(
-    ) ERC20("Ping Token", "PING") {
+    ){
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
 

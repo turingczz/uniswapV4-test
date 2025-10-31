@@ -20,9 +20,7 @@ libs = ["node_modules", "lib"]
 PRIVATE_KEY = "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80"
 
 [etherscan]
-merlin_testnet = { key = "${API_KEY_ETHERSCAN}", url = "${API_URL_ETHERSCAN}", chain = 686868 }
-bsc_main = { key = "${API_KEY_ETHERSCAN}", url = "${API_URL_ETHERSCAN}", chain = 56 }
-sepolia = { key = "dummy_key", url = "https://api-sepolia.etherscan.io/api", chain = 11155111 }
+# sepolia = { key = "dummy_key", url = "https://api-sepolia.etherscan.io/api", chain = 11155111 }
 
 [fmt]
   bracket_spacing = true
@@ -35,11 +33,6 @@ sepolia = { key = "dummy_key", url = "https://api-sepolia.etherscan.io/api", cha
   wrap_comments = true
 
 [rpc_endpoints]
-  # merlin_testnet = "https://merlintestnet.blockpi.network/v1/rpc/acd38a44243a57d89dc6dc1a4dc0daed10f339c7"
-  merlin_testnet = "https://merlin-testnet-rpc.merlinchain.io/" # "https://merlin-testnet-erigon.merlinchain.io/"
-
-  merlin_mainnet = "https://rpc.merlinchain.io"
-  bsc_main = "https://bsc-dataseed.binance.org"
   # sepolia = "https://sepolia.infura.io/v3/eddff9ff805a4401ab7328c082ad3752" 
   sepolia = "https://virulent-delicate-wish.ethereum-sepolia.quiknode.pro/"
             # "https://ethereum-sepolia-rpc.publicnode.com"
