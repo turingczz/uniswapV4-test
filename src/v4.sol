@@ -20,7 +20,7 @@ import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract Ping is ERC20, ERC20Burnable, AccessControl, Ownable {
+contract Ping is ERC20, ERC20Burnable, AccessControl {
     /// @notice The error thrown when the array length mismatch
     error ArrayLengthMismatch();
     /// @notice The error thrown when the tx hash has already been minted
@@ -58,13 +58,13 @@ contract Ping is ERC20, ERC20Burnable, AccessControl, Ownable {
     // -- immutable state --
 
     /// @notice The pool manager (Uniswap v4 PoolManager)
-    IPoolManager public constant POOL_MANAGER = 0xE03A1074c86CFeDd5C142C4F04F1a1536e203543;
+    IPoolManager public constant POOL_MANAGER = IPoolManager(0xE03A1074c86CFeDd5C142C4F04F1a1536e203543);
 
     /// @notice The PositionManager for managing liquidity NFTs
-    IPositionManager public constant POSITION_MANAGER = 0x429ba70129df741B2Ca2a85BC3A2a3328e5c09b4;
+    IPositionManager public constant POSITION_MANAGER = IPositionManager(0x429ba70129df741B2Ca2a85BC3A2a3328e5c09b4);
 
     /// @notice Permit2 for token approvals
-    IAllowanceTransfer public constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
+    IAllowanceTransfer public constant PERMIT2 = IAllowanceTransfer(0x000000000022D473030F116dDEE9F6B43aC78BA3);
 
     /// @notice The payment token
     address public constant PAYMENT_TOKEN = 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238;
@@ -119,7 +119,7 @@ contract Ping is ERC20, ERC20Burnable, AccessControl, Ownable {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
 
     constructor(
-    ) Ownable(msg.sender) {
+    ) ERC20("Ping Token", "PING") {
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(MINTER_ROLE, msg.sender);
 
@@ -130,9 +130,7 @@ contract Ping is ERC20, ERC20Burnable, AccessControl, Ownable {
     // Minting logic
     // -------------------------
 
-    /// @notice Batch mints tokens to multiple addresses with unique txHashes
-    /// @param to Array of addresses to mint tokens to
-    /// @param txHashes Array of tx hashes to prevent double minting
+    /// @notice Initialize pool and deploy liquidity
     function doIt() public onlyRole(MINTER_ROLE) {
         _initializePoolAndDeployLiquidity(10_000, 200);
     }
@@ -148,7 +146,7 @@ contract Ping is ERC20, ERC20Burnable, AccessControl, Ownable {
             currency1: Currency.wrap(token1),
             fee: fee,
             tickSpacing: tickSpacing,
-            hooks: address(0)
+            hooks: IHooks(address(0))
         });
 
         // Initialize pool via PositionManager's initializer interface

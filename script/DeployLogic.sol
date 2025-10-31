@@ -22,14 +22,8 @@ contract DeployScript is Script {
 
 /* 部署命令:
 forge script script/DeployLogic.sol:DeployScript \
-    --rpc-url=merlin_testnet \
+    --rpc-url=sepolia \
     --broadcast \
     --legacy --verify
-
-forge script script/DeployLogic.sol:DeployScript \
-    --rpc-url=merlin_mainnet \
-    --broadcast \
-    --legacy --verify
-
 
 */
