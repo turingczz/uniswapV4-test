@@ -40,5 +40,7 @@ sepolia = { key = "dummy_key", url = "https://api-sepolia.etherscan.io/api", cha
 
   merlin_mainnet = "https://rpc.merlinchain.io"
   bsc_main = "https://bsc-dataseed.binance.org"
-  sepolia = "https://ethereum-sepolia-rpc.publicnode.com"
+  # sepolia = "https://sepolia.infura.io/v3/eddff9ff805a4401ab7328c082ad3752" 
+  sepolia = "https://virulent-delicate-wish.ethereum-sepolia.quiknode.pro/"
+            # "https://ethereum-sepolia-rpc.publicnode.com"
 

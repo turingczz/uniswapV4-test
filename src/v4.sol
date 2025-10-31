@@ -292,4 +292,16 @@ contract Ping is ERC20, ERC20Burnable, AccessControl {
             sqrtPriceX96 = SQRT_PRICE_PING_FIRST;
         }
     }
+
+    /// @notice Get the LP token ID for the protocol-owned position
+    /// @return The token ID of the protocol-owned LP position
+    function getLpTokenId() external view returns (uint256) {
+        return _lpTokenId;
+    }
+
+    /// @notice Check if liquidity has been deployed
+    /// @return True if liquidity has been deployed, false otherwise
+    function isLiquidityDeployed() external view returns (bool) {
+        return _liquidityDeployed;
+    }
 }
