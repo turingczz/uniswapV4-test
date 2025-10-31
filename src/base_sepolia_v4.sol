@@ -150,7 +150,12 @@ contract Ping is ERC20, ERC20Burnable, AccessControl {
         });
 
         // Initialize pool via PositionManager's initializer interface
-        POOL_MANAGER.initialize(poolKey, sqrtPriceX96);
+        // Note: This requires the PoolManager to be deployed and activated on the network
+        try POOL_MANAGER.initialize(poolKey, sqrtPriceX96) {
+            // Successfully initialized
+        } catch {
+            revert("PoolManager initialization failed - check if Uniswap v4 is deployed on this network");
+        }
 
         // Prepare mint actions payload
         bytes memory actions = abi.encodePacked(uint8(Actions.MINT_POSITION), uint8(Actions.SETTLE_PAIR));

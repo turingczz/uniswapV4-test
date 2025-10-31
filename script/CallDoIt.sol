@@ -30,12 +30,18 @@ contract CallDoItScript is Script {
         // 开始广播交易
         vm.startBroadcast(callerPrivateKey);
         
-        // 调用doIt函数
-        pingContract.doIt();
+        // 调用doIt函数，添加错误处理
+        try pingContract.doIt() {
+            console.log("doIt() function called successfully!");
+        } catch Error(string memory reason) {
+            console.log("Error calling doIt(): ", reason);
+            revert(reason);
+        } catch (bytes memory) {
+            console.log("Unknown error calling doIt()");
+            revert("Unknown error occurred");
+        }
         
         vm.stopBroadcast();
-        
-        console.log("doIt() function called successfully!");
     }
     
     /**
