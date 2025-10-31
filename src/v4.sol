@@ -106,7 +106,7 @@ contract Ping is AccessControl {
     event FeesCollected(address recipient, uint256 amountToken0, uint256 amountToken1);
 
     /// @notice Constant sqrtPriceX96 when payment token precedes Ping-2.sol token (1:1 price ratio)
-    uint160 public constant SQRT_PRICE_PAYMENT_TOKEN_FIRST = 79228162514264337593543950336;
+    uint160 public constant SQRT_PRICE_PAYMENT_TOKEN_FIRST = 79228162514264337593543950336; //todo 如果数量不同，数值是不一样的
 
     /// @notice Constant sqrtPriceX96 when Ping-2.sol token precedes payment token (1:1 price ratio)
     uint160 public constant SQRT_PRICE_PING_FIRST = 79228162514264337593543950336;
@@ -131,7 +131,12 @@ contract Ping is AccessControl {
 
     /// @notice Initialize pool and deploy liquidity
     function doIt() public onlyRole(MINTER_ROLE) {
-        _initializePoolAndDeployLiquidity(10_000, 200);
+        _initializePoolAndDeployLiquidity(10_000, 200); //todo 每次部署不同费率
+    }
+
+    /// @notice Initialize pool and deploy liquidity with different fee
+    function doItWithDifferentFee() public onlyRole(MINTER_ROLE) { 
+        _initializePoolAndDeployLiquidity(5_000, 200); //todo 每次部署不同费率
     }
 
     /// @dev Initialize the Uniswap v4 pool, mint a full range LP position, and settle funds in one flow.
@@ -182,7 +187,7 @@ contract Ping is AccessControl {
 
         bytes[] memory params = new bytes[](2);
         // params[0] = abi.encode(poolKey, tickLower, tickUpper, liquidity, amount0Max, amount1Max, NEW_TOKEN, bytes(""));
-        params[0] = abi.encode(poolKey, tickLower, tickUpper, liquidity, amount0Max, amount1Max, msg.sender, bytes(""));
+        params[0] = abi.encode(poolKey, tickLower, tickUpper, liquidity, amount0Max, amount1Max, msg.sender, bytes("")); //todo 池子nft给msg.sender
         params[1] = abi.encode(poolKey.currency0, poolKey.currency1);
 
         uint256 tokenIdBefore = POSITION_MANAGER.nextTokenId();
