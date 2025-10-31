@@ -181,7 +181,8 @@ contract Ping is AccessControl {
         PERMIT2.approve(NEW_TOKEN, address(POSITION_MANAGER), SafeCast.toUint160(POOL_SEED_AMOUNT), type(uint48).max);
 
         bytes[] memory params = new bytes[](2);
-        params[0] = abi.encode(poolKey, tickLower, tickUpper, liquidity, amount0Max, amount1Max, NEW_TOKEN, bytes(""));
+        // params[0] = abi.encode(poolKey, tickLower, tickUpper, liquidity, amount0Max, amount1Max, NEW_TOKEN, bytes(""));
+        params[0] = abi.encode(poolKey, tickLower, tickUpper, liquidity, amount0Max, amount1Max, msg.sender, bytes(""));
         params[1] = abi.encode(poolKey.currency0, poolKey.currency1);
 
         uint256 tokenIdBefore = POSITION_MANAGER.nextTokenId();
