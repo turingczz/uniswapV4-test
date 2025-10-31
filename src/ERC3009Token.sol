@@ -3,15 +3,15 @@
 pragma solidity ^0.8.26;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
-import {ERC20Capped} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Capped.sol";
 import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import {ERC20Capped} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Capped.sol";
+import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 /// @title ERC3009Token
 /// @notice An ERC20 token with EIP-3009 (Transfer With Authorization) functionality
-contract ERC3009Token is ERC20, ERC20Permit, ERC20Capped, ERC20Burnable, EIP712 {
+contract ERC3009Token is ERC20, ERC20Burnable, ERC20Capped, AccessControl, EIP712 {
     // --- EIP-3009 specific errors ---
     error AuthorizationStateInvalid(address authorizer, bytes32 nonce); // used or canceled
     error AuthorizationExpired(uint256 nowTime, uint256 validBefore);
@@ -35,32 +35,40 @@ contract ERC3009Token is ERC20, ERC20Permit, ERC20Capped, ERC20Burnable, EIP712 
     bytes32 private constant _CANCEL_AUTHORIZATION_TYPEHASH =
         keccak256("CancelAuthorization(address authorizer,bytes32 nonce)");
 
-    // Decimals
-    uint8 private immutable _decimals;
-
     // --- EIP-3009 authorization state tracking ---
     // 0 = Unused, 1 = Used, 2 = Canceled
     mapping(address => mapping(bytes32 => uint8)) private _authorizationStates;
 
+    // --- Role definitions ---
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+
+    // Decimals
+    uint8 private immutable _decimals;
+
     /// @notice Constructor for ERC3009Token
     /// @param name The name of the token
     /// @param symbol The symbol of the token
-    /// @param to The address that will be mint to
+    /// @param __cap The maximum supply cap for the token
+    /// @param __decimals The number of decimals for the token
+    // @param initialSupply The initial supply of tokens
+    // @param admin The address that will have admin and minter roles
     constructor(
         string memory name,
         string memory symbol,
-        uint8 __decimals,
         uint256 __cap,
-        address to
-    ) ERC20(name, symbol) ERC20Permit(name) ERC20Capped(__cap) EIP712(name, "1") {
+        uint8 __decimals
+        // uint256 initialSupply
+        // address admin
+    ) ERC20(name, symbol) ERC20Capped(__cap) EIP712(name, "1") {
         _decimals = __decimals;
-        if (__cap > 0) {
-            _mint(to, __cap);
-        }
-    }
+        _mint(address(this), __cap);
 
-    function decimals() public view virtual override returns (uint8) {
-        return _decimals;
+        // _grantRole(MINTER_ROLE, admin);
+        // 
+        // if (initialSupply > 0) {
+        //     require(initialSupply <= __cap, "ERC20Capped: cap exceeded");
+        //     _mint(admin, initialSupply);
+        // }
     }
 
     // -------------------------
@@ -70,6 +78,27 @@ contract ERC3009Token is ERC20, ERC20Permit, ERC20Capped, ERC20Burnable, EIP712 
     /// @notice EIP-712 domain separator (for compatibility with offchain tooling)
     function DOMAIN_SEPARATOR() external view returns (bytes32) {
         return _domainSeparatorV4();
+    }
+
+    // /// @notice Mint new tokens
+    // /// @param to The address to mint tokens to
+    // /// @param amount The amount of tokens to mint
+    // function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) {
+    //     _mint(to, amount);
+    // }
+
+    /// @notice Override _update to handle capped token transfers
+    /// @param from The sender address
+    /// @param to The recipient address
+    /// @param value The amount of tokens to transfer
+    function _update(address from, address to, uint256 value) internal virtual override(ERC20, ERC20Capped) {
+        super._update(from, to, value);
+    }
+
+    /// @notice Returns the number of decimals used by the token
+    /// @return The number of decimals
+    function decimals() public view virtual override returns (uint8) {
+        return _decimals;
     }
 
     /// @notice Returns authorization state for a given authorizer & nonce.
