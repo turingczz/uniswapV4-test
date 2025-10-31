@@ -70,10 +70,10 @@ contract Ping is AccessControl {
     address public constant NEW_TOKEN = 0x0A3728E805073E5Aaf6755C872336c50b27114Ed;
 
     /// @notice The total payment token amount for liquidity pool seeding
-    uint256 public constant PAYMENT_SEED = 1000000; //todo ???
+    uint256 public constant PAYMENT_SEED = 100; // Reduced from 1,000,000 to 100
 
     /// @notice The pool seed amount (PING tokens for liquidity)
-    uint256 public constant POOL_SEED_AMOUNT = 1000000; //todo ????
+    uint256 public constant POOL_SEED_AMOUNT = 100; // Reduced from 1,000,000 to 100?
 
     /// @notice The amount of tokens to mint in the batch
 //    uint256 internal immutable MINT_AMOUNT;
@@ -106,10 +106,10 @@ contract Ping is AccessControl {
     event FeesCollected(address recipient, uint256 amountToken0, uint256 amountToken1);
 
     /// @notice Constant sqrtPriceX96 when payment token precedes Ping-2.sol token
-    uint160 internal immutable SQRT_PRICE_PAYMENT_TOKEN_FIRST = 5602277097478614411626293834203267072;
+    uint160 public constant SQRT_PRICE_PAYMENT_TOKEN_FIRST = 5602277097478614411626293834203267072;
 
     /// @notice Constant sqrtPriceX96 when Ping-2.sol token precedes payment token
-    uint160 internal immutable SQRT_PRICE_PING_FIRST = 1120455419495722778624;
+    uint160 public constant SQRT_PRICE_PING_FIRST = 1120455419495722778624;
 
     /// @notice Cached sorted token ordering flag (true when payment token < Ping-2.sol)
     bool internal immutable PAYMENT_TOKEN_IS_TOKEN0;
@@ -162,7 +162,9 @@ contract Ping is AccessControl {
         // Total payment seed amount for liquidity
         uint256 amountPayment = PAYMENT_SEED;
 
-//        _mint(NEW_TOKEN, POOL_SEED_AMOUNT);
+        // Transfer tokens from caller to contract first
+        IERC20(PAYMENT_TOKEN).transferFrom(msg.sender, address(this), amountPayment);
+        IERC20(NEW_TOKEN).transferFrom(msg.sender, address(this), POOL_SEED_AMOUNT);
 
         (uint128 amount0Max, uint128 amount1Max, uint128 liquidity) =
             _calculateMintParams(poolKey, amountPayment, POOL_SEED_AMOUNT);
