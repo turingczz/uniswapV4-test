@@ -106,13 +106,13 @@ contract Ping is ERC20, ERC20Burnable, AccessControl, EIP712, Ownable {
     /// @notice Emitted when fees are collected for the protocol-owned LP token
     event FeesCollected(address recipient, uint256 amountToken0, uint256 amountToken1);
 
-    /// @notice Constant sqrtPriceX96 when payment token precedes Ping-2.sol token
+    /// @notice Constant sqrtPriceX96 when payment token precedes xxx-ping.sol token
     uint160 internal immutable SQRT_PRICE_PAYMENT_TOKEN_FIRST;
 
-    /// @notice Constant sqrtPriceX96 when Ping-2.sol token precedes payment token
+    /// @notice Constant sqrtPriceX96 when xxx-ping.sol token precedes payment token
     uint160 internal immutable SQRT_PRICE_PING_FIRST;
 
-    /// @notice Cached sorted token ordering flag (true when payment token < Ping-2.sol)
+    /// @notice Cached sorted token ordering flag (true when payment token < xxx-ping.sol)
     bool internal immutable PAYMENT_TOKEN_IS_TOKEN0;
 
     /// @notice Role identifier for minters allowed to call batchMint
