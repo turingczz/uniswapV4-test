@@ -20,40 +20,7 @@ import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol"
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract Ping is AccessControl {
-    /// @notice The error thrown when the array length mismatch
-    error ArrayLengthMismatch();
-    /// @notice The error thrown when the tx hash has already been minted
-    error AlreadyMinted(address to, bytes32 txHash);
-    /// @notice The error thrown when the mint count exceeds the maximum mint count
-    error MaxMintCountExceeded();
-
-    // --- EIP-3009 specific errors ---
-    error AuthorizationStateInvalid(address authorizer, bytes32 nonce); // used or canceled
-    error AuthorizationExpired(uint256 nowTime, uint256 validBefore);
-    error AuthorizationNotYetValid(uint256 nowTime, uint256 validAfter);
-    error InvalidSigner(address signer, address expected);
-    error InvalidRecipient(address to);
-
-    // --- EIP-3009 events ---
-    event AuthorizationUsed(address indexed authorizer, bytes32 indexed nonce);
-    event AuthorizationCanceled(address indexed authorizer, bytes32 indexed nonce);
-
-    // --- EIP-3009 typehashes (per spec) ---
-//    bytes32 private constant _TRANSFER_WITH_AUTHORIZATION_TYPEHASH = keccak256(
-//        "TransferWithAuthorization(address from,address to,uint256 value,uint256 validAfter,uint256 validBefore,bytes32 nonce)"
-//    );
-
-//    bytes32 private constant _RECEIVE_WITH_AUTHORIZATION_TYPEHASH = keccak256(
-//        "ReceiveWithAuthorization(address from,address to,uint256 value,uint256 validAfter,uint256 validBefore,bytes32 nonce)"
-//    );
-
-//    bytes32 private constant _CANCEL_AUTHORIZATION_TYPEHASH =
-//        keccak256("CancelAuthorization(address authorizer,bytes32 nonce)");
-
-    // --- EIP-3009 authorization state tracking ---
-    // 0 = Unused, 1 = Used, 2 = Canceled
-//    mapping(address => mapping(bytes32 => uint8)) private _authorizationStates;
-
+    
     // -- immutable state --
 
     /// @notice The pool manager (Uniswap v4 PoolManager)
@@ -75,35 +42,11 @@ contract Ping is AccessControl {
     /// @notice The pool seed amount (PING tokens for liquidity)
     uint256 public constant POOL_SEED_AMOUNT = 100; // Reduced from 1,000,000 to 100?
 
-    /// @notice The amount of tokens to mint in the batch
-//    uint256 internal immutable MINT_AMOUNT;
-
-    /// @notice The number of mints allowed
-//    uint256 internal immutable MAX_MINT_COUNT;
-
-    /// @notice The number of mints
-//    uint256 internal _mintCount;
-
-    /// @notice Tracks which tx hashes have already been minted
-//    mapping(bytes32 => bool) public hasMinted;
-
-    /// @notice The lp guard hook
-//    address internal lpGuardHook;
-
     /// @notice Token ID for the protocol-owned LP position
     uint256 internal _lpTokenId;
 
     /// @notice Flag indicating whether liquidity has been deployed
     bool internal _liquidityDeployed;
-
-    /// @notice Flag indicating whether emergency withdraw has been used
-//    bool internal _emergencyWithdrawUsed;
-
-    /// @notice Emitted when the position manager mints the protocol-owned LP token
-    event LiquidityDeployed(uint256 tokenId, uint128 liquidity);
-
-    /// @notice Emitted when fees are collected for the protocol-owned LP token
-    event FeesCollected(address recipient, uint256 amountToken0, uint256 amountToken1);
 
     /// @notice Constant sqrtPriceX96 when payment token precedes Ping-2.sol token (1:1 price ratio)
     uint160 public constant SQRT_PRICE_PAYMENT_TOKEN_FIRST = 79228162514264337593543950336; //todo 如果数量不同，数值是不一样的
@@ -114,13 +57,13 @@ contract Ping is AccessControl {
     /// @notice Cached sorted token ordering flag (true when payment token < Ping-2.sol)
     bool internal immutable PAYMENT_TOKEN_IS_TOKEN0;
 
-    /// @notice Role identifier for minters allowed to call batchMint
-    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    // event
+    event LiquidityDeployed(uint256 tokenId, uint128 liquidity);
+    event FeesCollected(address recipient, uint256 amountToken0, uint256 amountToken1);
 
     constructor(
     ){
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(MINTER_ROLE, msg.sender);
 
         PAYMENT_TOKEN_IS_TOKEN0 = PAYMENT_TOKEN < NEW_TOKEN;
     }
@@ -130,12 +73,12 @@ contract Ping is AccessControl {
     // -------------------------
 
     /// @notice Initialize pool and deploy liquidity
-    function doIt() public onlyRole(MINTER_ROLE) {
+    function doIt() public onlyRole(DEFAULT_ADMIN_ROLE) {
         _initializePoolAndDeployLiquidity(10_000, 200); //todo 每次部署不同费率
     }
 
     /// @notice Initialize pool and deploy liquidity with different fee
-    function doItWithDifferentFee() public onlyRole(MINTER_ROLE) { 
+    function doItWithDifferentFee() public onlyRole(DEFAULT_ADMIN_ROLE) { 
         _initializePoolAndDeployLiquidity(11_000, 200); //todo 每次部署不同费率 5_000、2_000
     }
 
