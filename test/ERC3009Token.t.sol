@@ -153,8 +153,8 @@ contract ERC3009TokenTest is Test {
     function test_CancelAuthorization() public {
         // Prepare test data
         bytes32 nonce = keccak256("test-nonce-3");
-        uint256 validAfter = block.timestamp;
-        uint256 validBefore = block.timestamp + 1 hours;
+//        uint256 validAfter = block.timestamp;
+//        uint256 validBefore = block.timestamp + 1 hours;
         
         // Generate signature for cancel authorization
         (uint8 v, bytes32 r, bytes32 s) = _signCancelAuthorization(alice, nonce);
@@ -187,7 +187,7 @@ contract ERC3009TokenTest is Test {
     //     token.mint(alice, 1000 * 1e18);
     // }
     
-    function test_DomainSeparator() public {
+    function test_DomainSeparator() public view {
         // Test domain separator
         bytes32 domainSeparator = token.DOMAIN_SEPARATOR();
         assertTrue(domainSeparator != bytes32(0));
@@ -201,7 +201,7 @@ contract ERC3009TokenTest is Test {
         uint256 validAfter,
         uint256 validBefore,
         bytes32 nonce
-    ) internal returns (uint8 v, bytes32 r, bytes32 s) {
+    ) internal view returns (uint8 v, bytes32 r, bytes32 s) {
         bytes32 typeHash = keccak256(
             "TransferWithAuthorization(address from,address to,uint256 value,uint256 validAfter,uint256 validBefore,bytes32 nonce)"
         );
@@ -231,7 +231,7 @@ contract ERC3009TokenTest is Test {
         uint256 validAfter,
         uint256 validBefore,
         bytes32 nonce
-    ) internal returns (uint8 v, bytes32 r, bytes32 s) {
+    ) internal view returns (uint8 v, bytes32 r, bytes32 s) {
         bytes32 typeHash = keccak256(
             "ReceiveWithAuthorization(address from,address to,uint256 value,uint256 validAfter,uint256 validBefore,bytes32 nonce)"
         );
@@ -257,7 +257,7 @@ contract ERC3009TokenTest is Test {
     function _signCancelAuthorization(
         address authorizer,
         bytes32 nonce
-    ) internal returns (uint8 v, bytes32 r, bytes32 s) {
+    ) internal view returns (uint8 v, bytes32 r, bytes32 s) {
         bytes32 typeHash = keccak256("CancelAuthorization(address authorizer,bytes32 nonce)");
         
         bytes32 structHash = keccak256(abi.encode(typeHash, authorizer, nonce));

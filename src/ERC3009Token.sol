@@ -5,13 +5,14 @@ pragma solidity ^0.8.26;
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import {ERC20Capped} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Capped.sol";
-import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+//import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 /// @title ERC3009Token
 /// @notice An ERC20 token with EIP-3009 (Transfer With Authorization) functionality
-contract ERC3009Token is ERC20, ERC20Burnable, ERC20Capped, AccessControl, EIP712 {
+//contract ERC3009Token is ERC20, ERC20Burnable, ERC20Capped, AccessControl, EIP712 {
+contract ERC3009Token is ERC20, ERC20Burnable, ERC20Capped, EIP712 {
     // --- EIP-3009 specific errors ---
     error AuthorizationStateInvalid(address authorizer, bytes32 nonce); // used or canceled
     error AuthorizationExpired(uint256 nowTime, uint256 validBefore);
