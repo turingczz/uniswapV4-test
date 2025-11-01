@@ -11,10 +11,10 @@ contract X402Launchpad is Initializable, Sets {
 	using SafeERC20 for IERC20;
     string public constant version = "1.0.0";
 
-    struct TokenPayInfo {
-        bool success;  // Period start time, staking not allowed before this time
-        bool addedLiquidity;           // Number of days for the staking period
-        uint32 timestamp;    // Period end time, staking not allowed after this time
+    struct PreSale {
+        bool success;
+        bool addedLiquidity;
+        uint32 timestamp;
     }
 
     bytes32 internal constant _feeRate_             = "feeRate";
@@ -27,9 +27,9 @@ contract X402Launchpad is Initializable, Sets {
     mapping (IERC20 => uint) public starts;
     mapping (IERC20 => uint) public expiries;
     mapping (IERC20 => uint) public feeRate;
-    mapping (IERC20 => uint) public tokenIds; //lp nft
 
-    mapping (IERC20 => TokenPayInfo) public payInfo;//后端设置结束，是否预售成功，添加了流动性。
+    mapping (IERC20 => uint) public lpTokenIds; //lp nft
+    mapping (IERC20 => PreSale) public perSales;//后端设置结束，是否预售成功，添加了流动性。
     mapping (IERC20 => mapping (uint => bool)) public airdropped;//id是否空投
     mapping (IERC20 => mapping (address => uint)) public airdroppedAmount;//用户空投额度
     mapping (IERC20 => mapping (uint => bool)) public refunded;//id是否退款
@@ -82,7 +82,7 @@ contract X402Launchpad is Initializable, Sets {
 
         uint _feeRate = uint(Config.get(_feeRate_));
 
-        IERC20 token = IERC20(ERC3009Token(_name, _symbol, _decimals, _cap));
+        IERC20 token = IERC20(new ERC3009Token(_name, _symbol, _decimals, _cap));
         address pool = FunPool.createPool(address(token), _cap / 2, address(currency), amount-getFeeRateAmount(amount, _feeRate));
         emit CreateTokenAndCreatePool(msg.sender, _symbol, token, pool, block.timestamp);
 
@@ -103,24 +103,24 @@ contract X402Launchpad is Initializable, Sets {
     function addLiquidity(IERC20 token, bool success) external payable nonReentrant pauseable {
         require(msg.sender == Config.getA("tokenAdmin"), "create token admin only");
         require(amounts[token] > 0, "invalid token");
-        require(payInfo[token].timestamp > 0, "already added liquidity");
+        require(perSales[token].timestamp > 0, "already added liquidity");
 
         if (!success) {
-            payInfo[token].success = false;
-            payInfo[token].addedLiquidity = false;
-            payInfo[token].timestamp = block.timestamp;
+            perSales[token].success = false;
+            perSales[token].addedLiquidity = false;
+            perSales[token].timestamp = block.timestamp;
             emit AddLiquidity(msg.sender, token, success, block.timestamp);
             return;
         }
 
         uint feeRateAmount = getFeeRateAmount(total, feeRate[token]);
         uint amountLP;
-        (tokenIds[token],amountLP) = FunPool.addPool(address(token), supplies[token]/2, address(currency), amounts[token] - feeRateAmount);
+        (lpTokenIds[token],amountLP) = FunPool.addPool(address(token), supplies[token]/2, address(currency), amounts[token] - feeRateAmount);
         currency.safeTransfer(Config.getA("feeTo"), amounts[token] - amountLP);
 
-        payInfo[token].success = true;
-        payInfo[token].addedLiquidity = true;
-        payInfo[token].timestamp = block.timestamp;
+        perSales[token].success = true;
+        perSales[token].addedLiquidity = true;
+        perSales[token].timestamp = block.timestamp;
         emit AddedLiquidity(msg.sender, token, success, block.timestamp);
     }
     event AddedLiquidity(address msgSender, IERC20 indexed token, bool success, uint timestamp);
@@ -144,7 +144,7 @@ contract X402Launchpad is Initializable, Sets {
         airdroppedAmount[token][to] += amount;
         require(airdroppedAmount[token][to] <= quota[token], "exceed user amount");
 
-        require(payInfo[token].addedLiquidity, "need to add liquidity");
+        require(perSales[token].addedLiquidity, "need to add liquidity");
 
         //1.amount是x402支付的时候就确定的
         //2.token本身就在合约中，直接转移则ok
@@ -166,7 +166,7 @@ contract X402Launchpad is Initializable, Sets {
         require(refunded[token][id] == false, "airdropped already");
         refunded[token][id] = true;
 
-        require(!payInfo[token].success && payInfo[token].timestamp>0, "need to set failed");
+        require(!perSales[token].success && perSales[token].timestamp>0, "need to set failed");
 
         uint fee = getFeeRateAmount(amount, feeRate[token]);
         uint refundAmount = amount - fee;
@@ -193,13 +193,6 @@ contract X402Launchpad is Initializable, Sets {
 //        token.safeTransfer(swapFeeTo, token.balanceOf(address(this)) - volume);
 //    }
 //
-//    function unlock(IERC20 token) external nonReentrant governance {
-//        uint tokenId = tokenIds[token];
-//        ILocker(FunPool.locker()).withdraw(tokenId);
-//        ILiquidityManager(FunPool.liquidityManager()).transferFrom(address(this), Config.getA(_governor_), tokenId);
-//    }
-
-
     //更新设置开始时间和结束时间
     function setTokenTimes(IERC20 token, uint start, uint expiry) external governance {
         require(amounts[token] > 0, "invalid token");
@@ -211,9 +204,9 @@ contract X402Launchpad is Initializable, Sets {
     }
     event SetTimes(address indexed sender, IERC20 indexed token, uint oldStart, uint oldExpiry, uint start, uint expiry);
 
-    function getTokenInfo(IERC20 token) public view returns(uint,IERC20,uint,uint,uint,uint,TokenPayInfo) {
+    function getTokenInfo(IERC20 token) public view returns(uint,IERC20,uint,uint,uint,uint, PreSale) {
         require(amounts[token] > 0, "invalid token");
-        return (supplies[token], currencies[token], amounts[token], starts[token], expiries[token], payInfo[token]);
+        return (supplies[token], currencies[token], amounts[token], starts[token], expiries[token], perSales[token]);
     }
 
     function getFeeRateAmount(uint amount, uint _feeRate) public pure returns(uint) {
