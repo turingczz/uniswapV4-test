@@ -4,10 +4,12 @@ pragma solidity ^0.8.20;
 pragma abicoder v2;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import { Common } from "./common.sol";
 import "./ERC3009Token.sol";
 import "./v4.sol";
 
-contract X402Launchpad is Initializable, Sets {
+
+contract X402Launchpad is Common {
 	using SafeERC20 for IERC20;
     string public constant version = "1.0.0";
 
@@ -17,56 +19,28 @@ contract X402Launchpad is Initializable, Sets {
         uint32 timestamp;
     }
 
-    bytes32 internal constant _feeRate_             = "feeRate";
-    uint internal constant _max_count_              = 130;
-
     mapping (string => IERC20) public tokens;
+    mapping (IERC20 => uint) public supplies;
     mapping (IERC20 => IERC20) public currencies;
     mapping (IERC20 => uint) public amounts;
     mapping (IERC20 => uint) public quotas;
     mapping (IERC20 => uint) public starts;
     mapping (IERC20 => uint) public expiries;
-    mapping (IERC20 => uint) public feeRate;
+    mapping (IERC20 => uint) public feeRates;
 
-    mapping (IERC20 => uint) public lpTokenIds; //lp nft
+    mapping (IERC20 => address) public pools;
+    mapping (IERC20 => uint) public lpTokenIds;
     mapping (IERC20 => PreSale) public perSales;//后端设置结束，是否预售成功，添加了流动性。
     mapping (IERC20 => mapping (uint => bool)) public airdropped;//id是否空投
     mapping (IERC20 => mapping (address => uint)) public airdroppedAmount;//用户空投额度
     mapping (IERC20 => mapping (uint => bool)) public refunded;//id是否退款
 
-    bool private _nonReentrantStatus;
-
-    modifier nonReentrant {
-        require(!_nonReentrantStatus, "Invalid REENTRANT");
-        _nonReentrantStatus = true;
-        _;
-        _nonReentrantStatus = false;
+    constructor() {
+        _disableInitializers();
     }
 
-	mapping (IERC20 => mapping (address => uint)) public refundedOf;
-	mapping (IERC20 => uint) public supplies;
-    mapping (IERC20 => address) public createdPool;
-
-    modifier pauseable {
-        require(Config.get("pause") == 0, "paused");
-        _;
-    }
-
-    function pause() external {
-        require(isGovernor() || msg.sender == Config.getA("pauseAdmin"), "admin only");
-        Config.set("pause", 1);
-        emit Pause();
-    }
-    event Pause();
-
-    function unpause() external governance {
-        Config.set("pause", 0);
-        emit Unpause();
-    }
-    event Unpause();
-
-    function initialize(address governor) external virtual initializer {
-        initSetable(governor);
+    function initialize(address _initialOwner) public override initializer {
+        super.initialize(_initialOwner);
     }
 
     //角色一： 创建token，添加流动性
@@ -75,23 +49,21 @@ contract X402Launchpad is Initializable, Sets {
 
     //创建token，创建交易池
     function createTokenAndCreatePool(string memory _name, string memory _symbol, uint8 _decimals, uint _cap, IERC20 currency, uint amount, uint quota, uint start, uint expiry) external payable nonReentrant pauseable {
-        require(msg.sender == Config.getA("tokenAdmin"), "create token admin only");
+        require(msg.sender == tokenAdmin, "token admin only");
         require(start < expiry && block.timestamp < expiry, "too early expiry");
         require(_cap > 0 && amount > 0 && quota > 0, "Invalid cap, amount or quota");
         require(tokens[_symbol] == IERC20(address(0)), "Token exists!"); //检查平台是否存在该token
 
-        uint _feeRate = uint(Config.get(_feeRate_));
-
         IERC20 token = IERC20(new ERC3009Token(_name, _symbol, _decimals, _cap));
-        address pool = FunPool.createPool(address(token), _cap / 2, address(currency), amount-getFeeRateAmount(amount, _feeRate));
+        address pool = FunPool.createPool(address(token), _cap / 2, address(currency), amount-getFeeRateAmount(amount, feeRate));
         emit CreateTokenAndCreatePool(msg.sender, _symbol, token, pool, block.timestamp);
 
         tokens[_symbol] = token;
         supplies[token] = _cap;
         currencies[token] = currency;
         amounts[token] = amount;
-        feeRate[token] = _feeRate;
-        createdPool[token] = pool;
+        feeRates[token] = feeRate;
+        pools[token] = pool;
 
         quotas[token] = quota;
         starts[token] = start;
@@ -101,7 +73,7 @@ contract X402Launchpad is Initializable, Sets {
 
     //Completed
     function addLiquidity(IERC20 token, bool success) external payable nonReentrant pauseable {
-        require(msg.sender == Config.getA("tokenAdmin"), "create token admin only");
+        require(msg.sender == tokenAdmin, "create token admin only");
         require(amounts[token] > 0, "invalid token");
         require(perSales[token].timestamp > 0, "already added liquidity");
 
@@ -113,10 +85,10 @@ contract X402Launchpad is Initializable, Sets {
             return;
         }
 
-        uint feeRateAmount = getFeeRateAmount(total, feeRate[token]);
+        uint feeRateAmount = getFeeRateAmount(total, feeRates[token]);
         uint amountLP;
         (lpTokenIds[token],amountLP) = FunPool.addPool(address(token), supplies[token]/2, address(currency), amounts[token] - feeRateAmount);
-        currency.safeTransfer(Config.getA("feeTo"), amounts[token] - amountLP);
+        currency.safeTransfer(feeTo, amounts[token] - amountLP);
 
         perSales[token].success = true;
         perSales[token].addedLiquidity = true;
@@ -130,7 +102,7 @@ contract X402Launchpad is Initializable, Sets {
 
     //空投，打满添加流动性后，官方会发放一半的代币给用户
     function airdrops(IERC20 token, uint256[] calldata ids, address[] calldata tos, uint[] calldata amounts) external nonReentrant pauseable {
-        require(msg.sender == Config.getA("airdropAdmin"), "airdrop admin only");
+        require(msg.sender == airdropAdmin, "airdrop admin only");
         require(ids.length == tos.length && ids.length == amounts.length, "invalid length");
 
         for(uint i = 0; i < ids.length; i++) {
@@ -155,7 +127,7 @@ contract X402Launchpad is Initializable, Sets {
 
     //退款，只能在结束时间之后，官方调用
     function refunds(IERC20 token, uint256[] calldata ids, address[] calldata tos, uint[] calldata amounts) external nonReentrant pauseable {
-        require(msg.sender == Config.getA("refundAdmin"), "refund admin only");
+        require(msg.sender == refundAdmin, "refund admin only");
         require(ids.length == tos.length && ids.length == amounts.length, "invalid length");
 
         for(uint i = 0; i < ids.length; i++) {
@@ -168,9 +140,9 @@ contract X402Launchpad is Initializable, Sets {
 
         require(!perSales[token].success && perSales[token].timestamp>0, "need to set failed");
 
-        uint fee = getFeeRateAmount(amount, feeRate[token]);
+        uint fee = getFeeRateAmount(amount, feeRates[token]);
         uint refundAmount = amount - fee;
-        address feeTo = Config.getA("feeTo");
+        address feeTo = feeTo;
 		IERC20 currency = currencies[token];
 
         currency.safeTransfer(feeTo, fee);
@@ -188,7 +160,7 @@ contract X402Launchpad is Initializable, Sets {
 //        uint amount = currency.balanceOf(address(this));
 //        uint volume = token.balanceOf(address(this));
 //        ILocker(FunPool.locker()).collect(tokenIds[token]);
-//        address swapFeeTo = Config.getA("swapFeeTo");
+//        address swapFeeTo = swapFeeTo;
 //        currency.safeTransfer(swapFeeTo, currency.balanceOf(address(this)) - amount);
 //        token.safeTransfer(swapFeeTo, token.balanceOf(address(this)) - volume);
 //    }

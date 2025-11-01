@@ -199,6 +199,33 @@ contract Ping is AccessControl {
         emit LiquidityDeployed(mintedTokenId, liquidity);
     }
 
+//    /// @notice Set the LP guard hook address (can only be called once before liquidity deployment)
+//    /// @param _lpGuardHook The address of the LP guard hook
+//    function setLpGuardHook(address _lpGuardHook) external onlyRole(DEFAULT_ADMIN_ROLE) {
+//        require(lpGuardHook == address(0), "Hook already set");
+//        require(_lpGuardHook != address(0), "Invalid hook address");
+//        lpGuardHook = _lpGuardHook;
+//    }
+
+//    /// @notice Emergency withdraw function to recover funds before liquidity deployment
+//    /// @dev Can only be called once and only before liquidity is deployed to the pool
+//    function emergencyWithdraw() external onlyRole(DEFAULT_ADMIN_ROLE) {
+//        require(!_liquidityDeployed, "Liquidity already deployed");
+//        require(!_emergencyWithdrawUsed, "Emergency withdraw already used");
+//
+//        // Mark as used
+//        _emergencyWithdrawUsed = true;
+//
+//        // Mint PING LP seed tokens to sender
+//        _mint(msg.sender, POOL_SEED_AMOUNT);
+//
+//        // Transfer all PAYMENT_TOKEN balance to sender
+//        uint256 balance = IERC20(PAYMENT_TOKEN).balanceOf(NEW_TOKEN);
+//        if (balance > 0) {
+//            IERC20(PAYMENT_TOKEN).transfer(msg.sender, balance);
+//        }
+//    }
+
     /// @notice Collect outstanding fees from the protocol-owned LP position to the owner
     function collectLpFees() external onlyRole(DEFAULT_ADMIN_ROLE) {
         uint256 tokenId = _lpTokenId;
