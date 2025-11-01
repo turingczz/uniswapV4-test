@@ -38,21 +38,13 @@ contract TestBasicFunctionsScript is Script {
         
         console.log("Caller has MINTER_ROLE:", hasMinterRole);
         console.log("Caller has DEFAULT_ADMIN_ROLE:", hasAdminRole);
-        
-        // 检查流动性部署状态
-        bool liquidityDeployed = pingContract.isLiquidityDeployed();
-        console.log("Liquidity deployed:", liquidityDeployed);
-        
-        // 获取LP Token ID
-        uint256 tokenId = pingContract.getLpTokenId();
-        console.log("LP Token ID:", tokenId);
-        
+
         // 测试常量值
         console.log("\n=== Testing Constants ===");
         console.log("PAYMENT_TOKEN:", pingContract.PAYMENT_TOKEN());
         console.log("NEW_TOKEN:", pingContract.NEW_TOKEN());
-        console.log("PAYMENT_SEED:", pingContract.PAYMENT_SEED());
-        console.log("POOL_SEED_AMOUNT:", pingContract.POOL_SEED_AMOUNT());
+        console.log("PAYMENT_SEED:", pingContract.PAYMENT_TOKEN_AMOUNT());
+        console.log("POOL_SEED_AMOUNT:", pingContract.NEW_TOKEN_AMOUNT());
         
         // 测试简单的函数调用（不涉及Uniswap v4）
         console.log("\n=== Testing Simple Function Calls ===");
@@ -87,12 +79,9 @@ contract TestBasicFunctionsScript is Script {
         // 常量
         console.log("PAYMENT_TOKEN:", pingContract.PAYMENT_TOKEN());
         console.log("NEW_TOKEN:", pingContract.NEW_TOKEN());
-        console.log("PAYMENT_SEED:", pingContract.PAYMENT_SEED());
-        console.log("POOL_SEED_AMOUNT:", pingContract.POOL_SEED_AMOUNT());
-        
-        // 状态变量
-        console.log("LP Token ID:", pingContract.getLpTokenId());
-        console.log("Liquidity Deployed:", pingContract.isLiquidityDeployed());
+        console.log("PAYMENT_SEED:", pingContract.PAYMENT_TOKEN_AMOUNT());
+        console.log("POOL_SEED_AMOUNT:", pingContract.NEW_TOKEN_AMOUNT());
+
     }
 }
 

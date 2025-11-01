@@ -54,24 +54,6 @@ contract CallDoItScript is Script {
         bytes32 MINTER_ROLE = keccak256("MINTER_ROLE");
         return pingContract.hasRole(MINTER_ROLE, callerAddress);
     }
-    
-    /**
-     * @notice 获取合约的LP token ID
-     * @param contractAddress 合约地址
-     */
-    function getLpTokenId(address contractAddress) public view returns (uint256 tokenId) {
-        Ping pingContract = Ping(contractAddress);
-        tokenId = pingContract.getLpTokenId();
-    }
-    
-    /**
-     * @notice 检查流动性是否已部署
-     * @param contractAddress 合约地址
-     */
-    function isLiquidityDeployed(address contractAddress) public view returns (bool) {
-        Ping pingContract = Ping(contractAddress);
-        return pingContract.isLiquidityDeployed();
-    }
 }
 
 

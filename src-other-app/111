@@ -1,0 +1,28 @@
+
+    address public constant PAYMENT_TOKEN = 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238;
+    address public constant NEW_TOKEN = 0x0A3728E805073E5Aaf6755C872336c50b27114Ed;
+
+    uint256 public constant PAYMENT_SEED = 100;
+    uint256 public constant POOL_SEED_AMOUNT = 100;
+
+    uint160 public constant SQRT_PRICE_PAYMENT_TOKEN_FIRST = 79228162514264337593543950336;
+    uint160 public constant SQRT_PRICE_PING_FIRST = 79228162514264337593543950336;
+
+    bool internal immutable PAYMENT_TOKEN_IS_TOKEN0;
+    uint256 internal _lpTokenId;
+    bool internal _liquidityDeployed;
+
+
+    PAYMENT_TOKEN,NEW_TOKEN
+    PAYMENT_SEED,POOL_SEED_AMOUNT
+    SQRT_PRICE_PAYMENT_TOKEN_FIRST,SQRT_PRICE_PING_FIRST,PAYMENT_TOKEN_IS_TOKEN0
+
+
+event ParametersConfigured(
+        address paymentToken,
+        address newToken,
+        uint256 paymentSeed,
+        uint256 poolSeedAmount,
+        uint160 sqrtPricePaymentTokenFirst,
+        uint160 sqrtPricePingFirst
+    );

@@ -40,11 +40,7 @@ contract CallDoItWithDifferentFeeAndCollectScript is Script {
         
         require(hasMinterRole, "Caller does not have MINTER_ROLE");
         require(hasAdminRole, "Caller does not have DEFAULT_ADMIN_ROLE");
-        
-        // 检查流动性是否已部署
-        bool liquidityDeployed = pingContract.isLiquidityDeployed();
-        console.log("Liquidity already deployed:", liquidityDeployed);
-        
+
         // 开始广播交易
         vm.startBroadcast(callerPrivateKey);
         
@@ -78,14 +74,6 @@ contract CallDoItWithDifferentFeeAndCollectScript is Script {
         vm.stopBroadcast();
         
         console.log("\n=== Script completed successfully! ===");
-        
-        // 获取并显示LP token ID
-        uint256 tokenId = pingContract.getLpTokenId();
-        console.log("LP Token ID:", tokenId);
-        
-        // 再次检查流动性部署状态
-        bool newLiquidityDeployed = pingContract.isLiquidityDeployed();
-        console.log("Liquidity deployed after execution:", newLiquidityDeployed);
     }
     
     /**
@@ -108,24 +96,6 @@ contract CallDoItWithDifferentFeeAndCollectScript is Script {
         Ping pingContract = Ping(contractAddress);
         bytes32 DEFAULT_ADMIN_ROLE = pingContract.DEFAULT_ADMIN_ROLE();
         return pingContract.hasRole(DEFAULT_ADMIN_ROLE, callerAddress);
-    }
-    
-    /**
-     * @notice 获取合约的LP token ID
-     * @param contractAddress 合约地址
-     */
-    function getLpTokenId(address contractAddress) public view returns (uint256 tokenId) {
-        Ping pingContract = Ping(contractAddress);
-        tokenId = pingContract.getLpTokenId();
-    }
-    
-    /**
-     * @notice 检查流动性是否已部署
-     * @param contractAddress 合约地址
-     */
-    function isLiquidityDeployed(address contractAddress) public view returns (bool) {
-        Ping pingContract = Ping(contractAddress);
-        return pingContract.isLiquidityDeployed();
     }
 }
 

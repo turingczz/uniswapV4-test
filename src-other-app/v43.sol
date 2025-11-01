@@ -32,15 +32,30 @@ contract Ping is AccessControl {
     /// @notice Permit2 for token approvals
     IAllowanceTransfer public constant PERMIT2 = IAllowanceTransfer(0x000000000022D473030F116dDEE9F6B43aC78BA3);
 
-    struct TokenParams {
-        address paymentToken;
-        address newToken;
-        uint256 paymentTokenAmount;
-        uint256 newTokenAmount;
-        uint160 sqrtPricePaymentTokenFirst;
-        uint160 sqrtPriceNewTokenFirst;
-        bool paymentTokenIsToken0;
-    }
+    /// @notice The payment token
+    address public constant PAYMENT_TOKEN = 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238;
+    address public constant NEW_TOKEN = 0x0A3728E805073E5Aaf6755C872336c50b27114Ed;
+
+    /// @notice The total payment token amount for liquidity pool seeding
+    uint256 public constant PAYMENT_SEED = 100; // Reduced from 1,000,000 to 100
+
+    /// @notice The pool seed amount (PING tokens for liquidity)
+    uint256 public constant POOL_SEED_AMOUNT = 100; // Reduced from 1,000,000 to 100?
+
+    /// @notice Token ID for the protocol-owned LP position
+    uint256 internal _lpTokenId;
+
+    /// @notice Flag indicating whether liquidity has been deployed
+    bool internal _liquidityDeployed;
+
+    /// @notice Constant sqrtPriceX96 when payment token precedes Ping-2.sol token (1:1 price ratio)
+    uint160 public constant SQRT_PRICE_PAYMENT_TOKEN_FIRST = 79228162514264337593543950336; //todo 如果数量不同，数值是不一样的
+
+    /// @notice Constant sqrtPriceX96 when Ping-2.sol token precedes payment token (1:1 price ratio)
+    uint160 public constant SQRT_PRICE_PING_FIRST = 79228162514264337593543950336;
+
+    /// @notice Cached sorted token ordering flag (true when payment token < Ping-2.sol)
+    bool internal immutable PAYMENT_TOKEN_IS_TOKEN0;
 
     // event
     event LiquidityDeployed(uint256 tokenId, uint128 liquidity);
@@ -50,15 +65,7 @@ contract Ping is AccessControl {
     ){
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
-        TokenParams memory p = TokenParams({
-            paymentToken: 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238,
-            newToken: 0x0A3728E805073E5Aaf6755C872336c50b27114Ed,
-            paymentTokenAmount: 100,
-            newTokenAmount: 100,
-            sqrtPricePaymentTokenFirst: 79228162514264337593543950336,
-            sqrtPriceNewTokenFirst: 79228162514264337593543950336,
-            paymentTokenIsToken0: 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238 < 0x0A3728E805073E5Aaf6755C872336c50b27114Ed
-        });
+        PAYMENT_TOKEN_IS_TOKEN0 = PAYMENT_TOKEN < NEW_TOKEN;
     }
 
     // -------------------------
@@ -66,20 +73,20 @@ contract Ping is AccessControl {
     // -------------------------
 
     /// @notice Initialize pool and deploy liquidity
-    function doIt(TokenParams calldata p) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        _initializePoolAndDeployLiquidity(p, 10_000, 200); //todo 每次部署不同费率
+    function doIt() public onlyRole(DEFAULT_ADMIN_ROLE) {
+        _initializePoolAndDeployLiquidity(10_000, 200); //todo 每次部署不同费率
     }
 
     /// @notice Initialize pool and deploy liquidity with different fee
-    function doItWithDifferentFee(TokenParams calldata p) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        _initializePoolAndDeployLiquidity(p, 13_000, 200); //todo 每次部署不同费率 5_000、2_000
+    function doItWithDifferentFee() public onlyRole(DEFAULT_ADMIN_ROLE) { 
+        _initializePoolAndDeployLiquidity(11_000, 200); //todo 每次部署不同费率 5_000、2_000
     }
 
     /// @dev Initialize the Uniswap v4 pool, mint a full range LP position, and settle funds in one flow.
     /// @param fee The pool fee in pips (e.g. 3000 = 0.3%)
     /// @param tickSpacing The tick spacing for the pool configuration
-    function _initializePoolAndDeployLiquidity(TokenParams calldata p, uint24 fee, int24 tickSpacing) internal returns(uint256 lpTokenId) {
-        (address token0, address token1, uint160 sqrtPriceX96) = _sortedTokenData(p);
+    function _initializePoolAndDeployLiquidity(uint24 fee, int24 tickSpacing) internal {
+        (address token0, address token1, uint160 sqrtPriceX96) = _sortedTokenData();
 
         PoolKey memory poolKey = PoolKey({
             currency0: Currency.wrap(token0),
@@ -101,47 +108,51 @@ contract Ping is AccessControl {
         bytes memory actions = abi.encodePacked(uint8(Actions.MINT_POSITION), uint8(Actions.SETTLE_PAIR));
 
         // Total payment seed amount for liquidity
-        uint256 amountPayment = p.paymentTokenAmount;
+        uint256 amountPayment = PAYMENT_SEED;
 
         // Transfer tokens from caller to contract first
-        IERC20(p.paymentToken).transferFrom(msg.sender, address(this), p.paymentTokenAmount);
-        IERC20(p.newToken).transferFrom(msg.sender, address(this), p.newTokenAmount);
+        IERC20(PAYMENT_TOKEN).transferFrom(msg.sender, address(this), amountPayment);
+        IERC20(NEW_TOKEN).transferFrom(msg.sender, address(this), POOL_SEED_AMOUNT);
 
         (uint128 amount0Max, uint128 amount1Max, uint128 liquidity) =
-            _calculateMintParams(p, poolKey);
+            _calculateMintParams(poolKey, amountPayment, POOL_SEED_AMOUNT);
 
         (int24 tickLower, int24 tickUpper) = _fullRangeTicks(tickSpacing);
 
         // Set up approvals for Permit2 and PositionManager
         // Approve Permit2 to spend both tokens with the correct amount
-        IERC20(p.paymentToken).approve(address(PERMIT2), p.paymentTokenAmount);
-        IERC20(p.newToken).approve(address(PERMIT2), p.newTokenAmount);
+        IERC20(PAYMENT_TOKEN).approve(address(PERMIT2), amountPayment);
+        IERC20(NEW_TOKEN).approve(address(PERMIT2), POOL_SEED_AMOUNT);
 
         // Approve PositionManager via Permit2 for both tokens
-        PERMIT2.approve(p.paymentToken, address(POSITION_MANAGER), SafeCast.toUint160(p.paymentTokenAmount), type(uint48).max);
-        PERMIT2.approve(p.newToken, address(POSITION_MANAGER), SafeCast.toUint160(p.newTokenAmount), type(uint48).max);
+        PERMIT2.approve(PAYMENT_TOKEN, address(POSITION_MANAGER), SafeCast.toUint160(amountPayment), type(uint48).max);
+        PERMIT2.approve(NEW_TOKEN, address(POSITION_MANAGER), SafeCast.toUint160(POOL_SEED_AMOUNT), type(uint48).max);
 
         bytes[] memory params = new bytes[](2);
+        // params[0] = abi.encode(poolKey, tickLower, tickUpper, liquidity, amount0Max, amount1Max, NEW_TOKEN, bytes(""));
         params[0] = abi.encode(poolKey, tickLower, tickUpper, liquidity, amount0Max, amount1Max, msg.sender, bytes("")); //todo 池子nft给msg.sender
         params[1] = abi.encode(poolKey.currency0, poolKey.currency1);
 
         uint256 tokenIdBefore = POSITION_MANAGER.nextTokenId();
         POSITION_MANAGER.modifyLiquidities(abi.encode(actions, params), block.timestamp);
 
-        lpTokenId = tokenIdBefore;
-        emit LiquidityDeployed(lpTokenId, liquidity);
+        uint256 mintedTokenId = tokenIdBefore;
+        _lpTokenId = mintedTokenId;
+        _liquidityDeployed = true;
+        emit LiquidityDeployed(mintedTokenId, liquidity);
     }
 
     /// @notice Collect outstanding fees from the protocol-owned LP position to the owner
-    function collectLpFees(uint256 lpTokenId) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        require(lpTokenId != 0, "LP_NOT_INITIALIZED");
+    function collectLpFees() external onlyRole(DEFAULT_ADMIN_ROLE) {
+        uint256 tokenId = _lpTokenId;
+        require(tokenId != 0, "LP_NOT_INITIALIZED");
 
-        (PositionPoolKey memory poolKey,) = POSITION_MANAGER.getPoolAndPositionInfo(lpTokenId);
+        (PositionPoolKey memory poolKey,) = POSITION_MANAGER.getPoolAndPositionInfo(tokenId);
 
         bytes memory actions = abi.encodePacked(uint8(Actions.DECREASE_LIQUIDITY), uint8(Actions.TAKE_PAIR));
 
         bytes[] memory params = new bytes[](2);
-        params[0] = abi.encode(lpTokenId, uint256(0), uint128(0), uint128(0), bytes(""));
+        params[0] = abi.encode(tokenId, uint256(0), uint128(0), uint128(0), bytes(""));
         params[1] = abi.encode(poolKey.currency0, poolKey.currency1, msg.sender);
 
         uint256 deadline = block.timestamp + 1 hours;
@@ -155,7 +166,7 @@ contract Ping is AccessControl {
         IERC20(token).transfer(msg.sender, amount);
     }
 
-    function _calculateMintParams(TokenParams calldata p, PoolKey memory poolKey)
+    function _calculateMintParams(PoolKey memory poolKey, uint256 amountPaymentToken, uint256 amountPing)
         internal
         view
         returns (uint128 amount0Max, uint128 amount1Max, uint128 liquidity)
@@ -163,18 +174,18 @@ contract Ping is AccessControl {
         uint256 amount0;
         uint256 amount1;
 
-        if (p.paymentTokenIsToken0) {
-            amount0 = p.paymentTokenAmount;
-            amount1 = p.newTokenAmount;
+        if (PAYMENT_TOKEN_IS_TOKEN0) {
+            amount0 = amountPaymentToken;
+            amount1 = amountPing;
         } else {
-            amount0 = p.newTokenAmount;
-            amount1 = p.paymentTokenAmount;
+            amount0 = amountPing;
+            amount1 = amountPaymentToken;
         }
 
         amount0Max = SafeCast.toUint128(amount0);
         amount1Max = SafeCast.toUint128(amount1);
 
-        uint256 sqrtPriceX96 = p.paymentTokenIsToken0 ? p.sqrtPricePaymentTokenFirst : p.sqrtPriceNewTokenFirst;
+        uint256 sqrtPriceX96 = PAYMENT_TOKEN_IS_TOKEN0 ? SQRT_PRICE_PAYMENT_TOKEN_FIRST : SQRT_PRICE_PING_FIRST;
         (int24 tickLower, int24 tickUpper) = _fullRangeTicks(poolKey.tickSpacing);
 
         liquidity = LiquidityAmounts.getLiquidityForAmounts(
@@ -198,15 +209,15 @@ contract Ping is AccessControl {
         }
     }
 
-    function _sortedTokenData(TokenParams calldata p) internal view returns (address token0, address token1, uint160 sqrtPriceX96) {
-        if (p.paymentTokenIsToken0) {
-            token0 = p.paymentToken;
-            token1 = p.newToken;
-            sqrtPriceX96 = p.sqrtPricePaymentTokenFirst;
+    function _sortedTokenData() internal view returns (address token0, address token1, uint160 sqrtPriceX96) {
+        if (PAYMENT_TOKEN_IS_TOKEN0) {
+            token0 = PAYMENT_TOKEN;
+            token1 = NEW_TOKEN;
+            sqrtPriceX96 = SQRT_PRICE_PAYMENT_TOKEN_FIRST;
         } else {
-            token0 = p.newToken;
-            token1 = p.paymentToken;
-            sqrtPriceX96 = p.sqrtPriceNewTokenFirst;
+            token0 = NEW_TOKEN;
+            token1 = PAYMENT_TOKEN;
+            sqrtPriceX96 = SQRT_PRICE_PING_FIRST;
         }
     }
 }
