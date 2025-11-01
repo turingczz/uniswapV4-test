@@ -136,7 +136,7 @@ contract Ping is AccessControl {
 
     /// @notice Initialize pool and deploy liquidity with different fee
     function doItWithDifferentFee() public onlyRole(MINTER_ROLE) { 
-        _initializePoolAndDeployLiquidity(11_000, 200); //todo 每次部署不同费率 5_000、2_000
+        _initializePoolAndDeployLiquidity(2_000, 200); //todo 每次部署不同费率 5_000
     }
 
     /// @dev Initialize the Uniswap v4 pool, mint a full range LP position, and settle funds in one flow.
