@@ -138,7 +138,7 @@ contract UniswapV4 is AccessControl {
 
 
     /// @notice Collect outstanding fees from the protocol-owned LP position to the owner
-    function collectLpFees(uint256 lpTokenId) external onlyRole(DEFAULT_ADMIN_ROLE) {
+    function collectLpFees(uint256 lpTokenId) internal {
         require(lpTokenId != 0, "LP_NOT_INITIALIZED");
 
         (PositionPoolKey memory poolKey,) = POSITION_MANAGER.getPoolAndPositionInfo(lpTokenId);

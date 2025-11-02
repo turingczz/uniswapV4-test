@@ -30,7 +30,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
    mapping (IERC20 => uint) public expires;
    mapping (IERC20 => uint) public feeRates;
 
-   mapping (IERC20 => address) public pools;
+   mapping (IERC20 => TokenParams) public params;
    mapping (IERC20 => uint) public lpTokenIds;
    mapping (IERC20 => PreSale) public perSales;//后端设置结束，是否预售成功，添加了流动性。
    mapping (IERC20 => mapping (uint => bool)) public airdropped;//id是否空投
@@ -56,17 +56,27 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
        require(_cap > 0 && _amount > 0 && _quota > 0, "Invalid cap, amount or quota");
        require(tokens[_symbol] == IERC20(address(0)), "Token exists!"); //检查平台是否存在该token
 
-       IERC20 token = IERC20(new ERC3009Token(_name, _symbol, _decimals, uint8(_cap)));
-       address pool;
-//       address pool = FunPool.createPool(address(token), _cap / 2, address(currency), amount-getFeeRateAmount(amount, feeRate));
-//       emit CreateTokenAndCreatePool(msg.sender, _symbol, token, pool, block.timestamp);
+    //    IERC20 token = IERC20(new ERC3009Token(_name, _symbol, _decimals, uint8(_cap)));
+    //    address pool;
 
+        TokenParams memory p = TokenParams({
+            paymentToken: 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238,
+            newToken: 0x0A3728E805073E5Aaf6755C872336c50b27114Ed,
+            paymentTokenAmount: 100,
+            newTokenAmount: 100,
+            sqrtPricePaymentTokenFirst: 79228162514264337593543950336,
+            sqrtPriceNewTokenFirst: 79228162514264337593543950336,
+            paymentTokenIsToken0: 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238 < 0x0A3728E805073E5Aaf6755C872336c50b27114Ed
+        });
+        _initializePool(p, 211, 200);
+
+        IERC20 token = IERC20(p.newToken);
        tokens[_symbol] = token;
        supplies[token] = _cap;
        currencies[token] = _currency;
        amounts[token] = _amount;
        feeRates[token] = feeRate;
-       pools[token] = pool;
+       params[token] = p;
 
        quotas[token] = _quota;
        starts[token] = _start;
@@ -84,7 +94,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
            perSales[_token].success = false;
            perSales[_token].addedLiquidity = false;
            perSales[_token].timestamp = block.timestamp;
-//           emit AddLiquidity(msg.sender, token, success, block.timestamp);
+          emit AddedLiquidity(msg.sender, _token, false, block.timestamp);
            return;
        }
 
@@ -92,6 +102,8 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
 //       uint amountLP;
 //       (lpTokenIds[token],amountLP) = FunPool.addPool(address(token), supplies[token]/2, address(currency), amounts[token] - feeRateAmount);
 //       currency.safeTransfer(feeTo, amounts[token] - amountLP);
+
+       lpTokenIds[_token] = _deployLiquidity(params[_token], 211, 200);   
 
        perSales[_token].success = true;
        perSales[_token].addedLiquidity = true;
@@ -154,20 +166,24 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
    }
    event Refund(IERC20 indexed token, uint id, address indexed to, uint fee, uint refundAmount);
 
-//    //手动操作，收集手续费用
-//    function collectLpFees(IERC20 token) external nonReentrant {
-//        require(address(token) != address(0), "invalid token");
-//        IERC20 currency = currencies[token];
-//        if(address(currency) == address(0))
-//            currency = IERC20(ILiquidityManager(FunPool.liquidityManager()).WETH9());
-//        uint amount = currency.balanceOf(address(this));
-//        uint volume = token.balanceOf(address(this));
-//        ILocker(FunPool.locker()).collect(tokenIds[token]);
-//        address swapFeeTo = swapFeeTo;
-//        currency.safeTransfer(swapFeeTo, currency.balanceOf(address(this)) - amount);
-//        token.safeTransfer(swapFeeTo, token.balanceOf(address(this)) - volume);
-//    }
-//
+   //手动操作，收集手续费用
+   function collectFees(IERC20 _token) external nonReentrant {
+       require(address(_token) != address(0), "invalid token");
+       require(amounts[_token] > 0, "not exist token");
+       address swapFeeCurrency;
+       uint lpTokenId = lpTokenIds[_token];
+        
+        //feeTo 是合约地址，需要手动提取
+       IERC20 currency = IERC20(swapFeeCurrency);
+       uint amountBefore = currency.balanceOf(address(this));
+       
+       collectLpFees(lpTokenId); //todo 测试一下fee提取到哪里了，怎么正确配置一下；如果知道哪个用户调用；直接nft转给这个地址比较合适
+        //是否提取到本合约中了，如果是从合约中提取
+
+        uint amountAfter = currency.balanceOf(address(this));
+       currency.safeTransfer(swapFeeTo, amountAfter - amountBefore);
+   }
+
    //更新设置开始时间和结束时间
    function setTokenTimes(IERC20 _token, uint _start, uint _expiry) external onlyOwner {
        require(amounts[_token] > 0, "invalid token");
