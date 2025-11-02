@@ -125,7 +125,7 @@ contract TestX402LaunchpadScript is Script {
         IERC20 token = IERC20(tokenAddress);
         
         // 记录当前手续费余额
-        uint256 initialBalance = deployer.balance;
+//        uint256 initialBalance = deployer.balance;
         
         // 调用collectFees
         launchpad.collectFees(token);

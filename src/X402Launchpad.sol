@@ -3,10 +3,10 @@
 pragma solidity ^0.8.28;
 pragma abicoder v2;
 
+import {Context} from "@openzeppelin/contracts/utils/Context.sol";
+import {ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { Context } from "@openzeppelin/contracts/utils/Context.sol";
-import { ContextUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 import "./ERC3009Token.sol";
 import "./UniswapV4.sol";
 import "./X402LaunchpadCommon.sol";
@@ -20,11 +20,12 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
        bool addedLiquidity;
        uint256 updateTimestamp;
    }
-
    mapping (string => IERC20) public tokens;
    mapping (IERC20 => uint) public supplies;
+    mapping (IERC20 => uint) public suppliesAdded;
    mapping (IERC20 => IERC20) public currencies;
    mapping (IERC20 => uint) public amounts;
+   mapping (IERC20 => uint) public amountsAdded;
    mapping (IERC20 => uint) public quotas;
    mapping (IERC20 => uint) public starts;
    mapping (IERC20 => uint) public expires;
@@ -59,63 +60,57 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
        require(_cap > 0 && _amount > 0 && _quota > 0, "Invalid cap, amount or quota");
        require(tokens[_symbol] == IERC20(address(0)), "Token exists!"); //检查平台是否存在该token
 
-        IERC20 token = IERC20(new ERC3009Token(_name, _symbol, _decimals, uint8(_cap)));
-        TokenParams memory p = TokenParams({
-            paymentToken: 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238,
-            newToken: 0x0A3728E805073E5Aaf6755C872336c50b27114Ed,
-            paymentTokenAmount: 100,
-            newTokenAmount: 100,
-            paymentTokenIsToken0: 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238 < 0x0A3728E805073E5Aaf6755C872336c50b27114Ed,
+       uint256 amountAdded = _amount - getFeeRateAmount(_amount, feeRate);
+       uint256 supplyAdded = _cap * tokenAddRate / SCALE_FACTOR; //80%
+
+       IERC20 token = IERC20(new ERC3009Token(_name, _symbol, _decimals, uint8(_cap)));
+       bool paymentTokenIsToken0 = paymentToken < address(token);
+       TokenParams memory p = TokenParams({
+            paymentToken: paymentToken,
+            newToken: address(token),
+            paymentTokenAmount: amountAdded,
+            newTokenAmount: supplyAdded,
+            paymentTokenIsToken0: paymentTokenIsToken0,
             sqrtPricePaymentTokenFirst: 0,
             sqrtPriceNewTokenFirst: 0
         });
          (p.sqrtPricePaymentTokenFirst, p.sqrtPriceNewTokenFirst) = _calculateSqrtPrices(
-             p.paymentTokenAmount, p.newTokenAmount, p.paymentTokenIsToken0);
-        _initializePool(p, 211, 200);
+             amountAdded, supplyAdded, paymentTokenIsToken0);
+        _initializePool(p, uint24(feeRate), 200);
+       emit CreateTokenAndCreatePool(msg.sender, _symbol, token, block.timestamp, p);
 
        tokens[_symbol] = token;
        supplies[token] = _cap;
+       suppliesAdded[token] = supplyAdded;
        currencies[token] = _currency;
        amounts[token] = _amount;
+       amountsAdded[token] = amountAdded;
        feeRates[token] = feeRate;
        params[token] = p;
-
        quotas[token] = _quota;
        starts[token] = _start;
        expires[token] = _expiry;
    }
-   event CreateTokenAndCreatePool(address msgSender, string _symbol, IERC20 indexed token, uint timestamp);
+   event CreateTokenAndCreatePool(address msgSender, string _symbol, IERC20 indexed token, uint timestamp, TokenParams p);
 
    //Completed
    function addLiquidity(IERC20 _token, bool _preSaleSuccess) external payable nonReentrant whenNotPaused {
        require(msg.sender == tokenAdmin, "create token admin only");
-       require(amounts[_token] > 0, "invalid token");
+       require(block.timestamp > expires[_token], "not over expiry");
        require(perSales[_token].updateTimestamp > 0, "already added liquidity");
 
        if (!_preSaleSuccess) {
-           perSales[_token].success = false;
-           perSales[_token].addedLiquidity = false;
-           perSales[_token].updateTimestamp = block.timestamp;
-          emit AddedLiquidity(msg.sender, _token, false, block.timestamp);
+           perSales[_token] = PreSale(false, false, block.timestamp);
+           emit AddedLiquidity(msg.sender, _token, false, block.timestamp);
            return;
        }
+       perSales[_token] = PreSale(true, true, block.timestamp);
 
-//       uint feeRateAmount = getFeeRateAmount(total, feeRates[token]);
-//       uint amountLP;
-//       (lpTokenIds[token],amountLP) = FunPool.addPool(address(token), supplies[token]/2, address(currency), amounts[token] - feeRateAmount);
-//       currency.safeTransfer(feeTo, amounts[token] - amountLP);
-
-       lpTokenIds[_token] = _deployLiquidity(params[_token], 211, 200);   
-
-       perSales[_token].success = true;
-       perSales[_token].addedLiquidity = true;
-       perSales[_token].updateTimestamp = block.timestamp;
-       emit AddedLiquidity(msg.sender, _token, _preSaleSuccess, block.timestamp);
+       lpTokenIds[_token] = _deployLiquidity(params[_token], 211, 200);
+       currencies[_token].safeTransfer(feeTo, amounts[_token] - amountsAdded[_token]);
+        emit AddedLiquidity(msg.sender, _token, _preSaleSuccess, block.timestamp);
    }
    event AddedLiquidity(address msgSender, IERC20 indexed token, bool success, uint timestamp);
-
-
-
 
    //空投，打满添加流动性后，官方会发放一半的代币给用户
    function airdrops(IERC20 _token, uint256[] calldata _ids, address[] calldata _tos, uint[] calldata _amounts) external nonReentrant whenNotPaused {

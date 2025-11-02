@@ -16,7 +16,7 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
    uint256 public constant MIN_AMOUNT = 1e15;
    uint256 public constant ONE_MBTC = 1e18;
    uint256 public constant SECONDS_PER_YEAR = 365 * 86400;
-   uint256 public constant APR_SCALE_FACTOR = 1e6;
+   uint256 public constant SCALE_FACTOR = 1e6;
    uint32 public constant SECONDS_PER_DAY = 86400;
    uint256 private _nonReentrantStatus;
    address public pauseAdmin;
@@ -25,10 +25,12 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
    address public tokenAdmin;
    address public airdropAdmin;
    address public refundAdmin;
+    address public paymentToken;//default usdc
    address public feeTo;
    address public swapFeeTo;
-   uint256 public feeRate;
-   uint256 public swapFeeRate;
+   uint256 public feeRate; //default 50000 5%
+   uint256 public swapFeeRate; //default 10000 1%
+    uint256 public tokenAddRate;//default 800000 80%
 
    modifier nonReentrant() {
        if (_nonReentrantStatus != 0) revert ReentrancyGuardStatus();
@@ -70,27 +72,26 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
     * @param _refundAdmin Address of the refund admin
     * @param _feeTo Address of the fee recipient
     * @param _swapFeeTo Address of the swap fee recipient
-    * @param _feeRate Fee rate for staking operations
-    * @param _swapFeeRate Fee rate for swap operations
     */
-   function initConfig(address _tokenAdmin, address _airdropAdmin, address _refundAdmin, address _feeTo, address _swapFeeTo, uint256 _feeRate, uint256 _swapFeeRate) external onlyOwner {
+   function initConfig(address _tokenAdmin, address _airdropAdmin, address _refundAdmin, address _paymentToken, address _feeTo, address _swapFeeTo) external onlyOwner {
        if (_tokenAdmin == address(0)) revert ZeroAddress("token admin");
        if (_airdropAdmin == address(0)) revert ZeroAddress("airdrop admin");
        if (_refundAdmin == address(0)) revert ZeroAddress("refund admin");
+       if (_paymentToken == address(0)) revert ZeroAddress("payment token");
        if (_feeTo == address(0)) revert ZeroAddress("fee to");
        if (_swapFeeTo == address(0)) revert ZeroAddress("swap fee to");
-       if (_feeRate == 0) revert ZeroValue("fee rate");
-       if (_swapFeeRate == 0) revert ZeroValue("swap fee rate");
 
        tokenAdmin = _tokenAdmin;
        airdropAdmin = _airdropAdmin;
        refundAdmin = _refundAdmin;
+       paymentToken = _paymentToken;
        feeTo = _feeTo;
        swapFeeTo = _swapFeeTo;
-       feeRate = _feeRate;
-       swapFeeRate = _swapFeeRate;
+       feeRate = 50000; //default 5%
+       swapFeeRate = 10000; //default 1%
+       tokenAddRate = 800000; //default 80%
 
-       emit InitConfig(msg.sender, _tokenAdmin, _airdropAdmin, _refundAdmin, _feeTo, _swapFeeTo, _feeRate, _swapFeeRate);
+       emit InitConfig(msg.sender, _tokenAdmin, _airdropAdmin, _refundAdmin, _paymentToken, _feeTo, _swapFeeTo);
    }
 
    /**
@@ -261,5 +262,5 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
    event SwapFeeToChanged(address adminSetter, address oldSwapFeeTo, address newSwapFeeTo);
    event FeeRateChanged(address adminSetter, uint256 oldFeeRate, uint256 newFeeRate);
    event SwapFeeRateChanged(address adminSetter, uint256 oldSwapFeeRate, uint256 newSwapFeeRate);
-    event InitConfig(address adminSetter, address tokenAdmin, address airdropAdmin, address refundAdmin, address feeTo, address swapFeeTo, uint256 feeRate, uint256 swapFeeRate);
+    event InitConfig(address adminSetter, address tokenAdmin, address airdropAdmin, address refundAdmin, address paymentToken, address feeTo, address swapFeeTo);
 }
