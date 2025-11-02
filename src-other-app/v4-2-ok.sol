@@ -20,17 +20,7 @@ import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol"
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract V4 is AccessControl {
-
-    struct TokenParams {
-        address paymentToken;
-        address newToken;
-        uint256 paymentTokenAmount;
-        uint256 newTokenAmount;
-        uint160 sqrtPricePaymentTokenFirst;
-        uint160 sqrtPriceNewTokenFirst;
-        bool paymentTokenIsToken0;
-    }
-
+    
     // -- immutable state --
 
     /// @notice The pool manager (Uniswap v4 PoolManager)
@@ -42,8 +32,17 @@ contract V4 is AccessControl {
     /// @notice Permit2 for token approvals
     IAllowanceTransfer public constant PERMIT2 = IAllowanceTransfer(0x000000000022D473030F116dDEE9F6B43aC78BA3);
 
+    struct TokenParams {
+        address paymentToken;
+        address newToken;
+        uint256 paymentTokenAmount;
+        uint256 newTokenAmount;
+        uint160 sqrtPricePaymentTokenFirst;
+        uint160 sqrtPriceNewTokenFirst;
+        bool paymentTokenIsToken0;
+    }
+
     // event
-    event InitializePool(PoolKey poolKey);
     event LiquidityDeployed(uint256 tokenId, uint128 liquidity);
     event FeesCollected(address recipient, uint256 amountToken0, uint256 amountToken1);
 
@@ -62,13 +61,108 @@ contract V4 is AccessControl {
         // });
     }
 
+    // -------------------------
+    // Minting logic
+    // -------------------------
+
+    /// @notice Initialize pool and deploy liquidity
+    function doIt(TokenParams memory p) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        _initializePoolAndDeployLiquidity(p, 10_000, 200); //todo 每次部署不同费率
+    }
+
+    /// @notice Initialize pool and deploy liquidity with different fee
+    function doItWithDifferentFee(TokenParams memory p, uint24 fee, int24 tickSpacing) public onlyRole(DEFAULT_ADMIN_ROLE) returns(uint256 lpTokenId) {
+        return _initializePoolAndDeployLiquidity(p, fee, tickSpacing); //todo 每次部署不同费率 5_000、2_000
+    }
+
+        /// @notice Initialize pool and deploy liquidity with different fee
+    function doItWithDifferentFee2(uint24 fee, int24 tickSpacing) public onlyRole(DEFAULT_ADMIN_ROLE) returns(uint256 lpTokenId) {
+        TokenParams memory p = TokenParams({
+            paymentToken: 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238,
+            newToken: 0x0A3728E805073E5Aaf6755C872336c50b27114Ed,
+            paymentTokenAmount: 100,
+            newTokenAmount: 100,
+            sqrtPricePaymentTokenFirst: 79228162514264337593543950336,
+            sqrtPriceNewTokenFirst: 79228162514264337593543950336,
+            paymentTokenIsToken0: 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238 < 0x0A3728E805073E5Aaf6755C872336c50b27114Ed
+        });
+        return _initializePoolAndDeployLiquidity(p, fee, tickSpacing); //todo 每次部署不同费率 5_000、2_000
+    }
+
     /// @dev Initialize the Uniswap v4 pool, mint a full range LP position, and settle funds in one flow.
     /// @param fee The pool fee in pips (e.g. 3000 = 0.3%)
     /// @param tickSpacing The tick spacing for the pool configuration
+    function _initializePoolAndDeployLiquidity(TokenParams memory p, uint24 fee, int24 tickSpacing) internal returns(uint256 lpTokenId) {
+        (address token0, address token1, uint160 sqrtPriceX96) = _sortedTokenData(p);
+
+        PoolKey memory poolKey = PoolKey({
+            currency0: Currency.wrap(token0),
+            currency1: Currency.wrap(token1),
+            fee: fee,
+            tickSpacing: tickSpacing,
+            hooks: IHooks(address(0))
+        });
+
+        // Initialize pool via PositionManager's initializer interface
+        // Note: This requires the PoolManager to be deployed and activated on the network
+        try POOL_MANAGER.initialize(poolKey, sqrtPriceX96) {
+            // Successfully initialized
+        } catch {
+            revert("PoolManager initialization failed - check if Uniswap v4 is deployed on this network");
+        }
+
+        // Prepare mint actions payload
+        bytes memory actions = abi.encodePacked(uint8(Actions.MINT_POSITION), uint8(Actions.SETTLE_PAIR));
+
+        // Transfer tokens from caller to contract first
+        IERC20(p.paymentToken).transferFrom(msg.sender, address(this), p.paymentTokenAmount);
+        IERC20(p.newToken).transferFrom(msg.sender, address(this), p.newTokenAmount);
+
+        (uint128 amount0Max, uint128 amount1Max, uint128 liquidity) =
+            _calculateMintParams(p, poolKey);
+
+        (int24 tickLower, int24 tickUpper) = _fullRangeTicks(tickSpacing);
+
+        // Set up approvals for Permit2 and PositionManager
+        // Approve Permit2 to spend both tokens with the correct amount
+        IERC20(p.paymentToken).approve(address(PERMIT2), p.paymentTokenAmount);
+        IERC20(p.newToken).approve(address(PERMIT2), p.newTokenAmount);
+
+        // Approve PositionManager via Permit2 for both tokens
+        PERMIT2.approve(p.paymentToken, address(POSITION_MANAGER), SafeCast.toUint160(p.paymentTokenAmount), type(uint48).max);
+        PERMIT2.approve(p.newToken, address(POSITION_MANAGER), SafeCast.toUint160(p.newTokenAmount), type(uint48).max);
+
+        bytes[] memory params = new bytes[](2);
+        params[0] = abi.encode(poolKey, tickLower, tickUpper, liquidity, amount0Max, amount1Max, address(this), bytes("")); //todo 池子nft给msg.sender
+        params[1] = abi.encode(poolKey.currency0, poolKey.currency1);
+
+        uint256 tokenIdBefore = POSITION_MANAGER.nextTokenId();
+        POSITION_MANAGER.modifyLiquidities(abi.encode(actions, params), block.timestamp);
+
+        lpTokenId = tokenIdBefore;
+        emit LiquidityDeployed(lpTokenId, liquidity);
+    }
+
     function initAndAdd(TokenParams memory p, uint24 fee, int24 tickSpacing) public onlyRole(DEFAULT_ADMIN_ROLE) returns(uint256 lpTokenId) {
         _initializePool(p, fee, tickSpacing);
         return _deployLiquidity(p, fee, tickSpacing);
     }
+
+    function initAndAdd2(uint24 fee, int24 tickSpacing) public onlyRole(DEFAULT_ADMIN_ROLE) returns(uint256 lpTokenId) {
+        TokenParams memory p = TokenParams({
+            paymentToken: 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238,
+            newToken: 0x0A3728E805073E5Aaf6755C872336c50b27114Ed,
+            paymentTokenAmount: 100,
+            newTokenAmount: 100,
+            sqrtPricePaymentTokenFirst: 79228162514264337593543950336,
+            sqrtPriceNewTokenFirst: 79228162514264337593543950336,
+            paymentTokenIsToken0: 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238 < 0x0A3728E805073E5Aaf6755C872336c50b27114Ed
+        });
+
+        _initializePool(p, fee, tickSpacing);
+        return _deployLiquidity(p, fee, tickSpacing);
+    }
+    event InitializePool(PoolKey poolKey);
 
     //----------init and deploy liquidity
     function _initializePool(TokenParams memory p, uint24 fee, int24 tickSpacing) internal {
