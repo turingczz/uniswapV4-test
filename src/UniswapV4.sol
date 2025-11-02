@@ -162,7 +162,7 @@ contract UniswapV4 is AccessControl {
 
     function _calculateMintParams(TokenParams memory p, PoolKey memory poolKey)
         internal
-        view
+        pure
         returns (uint128 amount0Max, uint128 amount1Max, uint128 liquidity)
     {
         uint256 amount0;
@@ -203,7 +203,7 @@ contract UniswapV4 is AccessControl {
         }
     }
 
-    function _sortedTokenData(TokenParams memory p) internal view returns (address token0, address token1, uint160 sqrtPriceX96) {
+     function _sortedTokenData(TokenParams memory p) internal pure returns (address token0, address token1, uint160 sqrtPriceX96) {
         if (p.paymentTokenIsToken0) {
             token0 = p.paymentToken;
             token1 = p.newToken;

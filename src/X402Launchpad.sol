@@ -5,6 +5,8 @@ pragma abicoder v2;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { Context } from "@openzeppelin/contracts/utils/Context.sol";
+import { ContextUpgradeable } from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 import "./ERC3009Token.sol";
 import "./UniswapV4.sol";
 import "./X402LaunchpadCommon.sol";
@@ -185,4 +187,17 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
    function getFeeRateAmount(uint _amount, uint _feeRate) public pure returns(uint) {
        return _amount * _feeRate / 1e18;
    }
+
+    // Override functions to resolve diamond inheritance conflict
+    function _msgSender() internal view virtual override(Context, ContextUpgradeable) returns (address) {
+        return ContextUpgradeable._msgSender();
+    }
+
+    function _msgData() internal view virtual override(Context, ContextUpgradeable) returns (bytes calldata) {
+        return ContextUpgradeable._msgData();
+    }
+
+    function _contextSuffixLength() internal view virtual override(Context, ContextUpgradeable) returns (uint256) {
+        return ContextUpgradeable._contextSuffixLength();
+    }
 }
