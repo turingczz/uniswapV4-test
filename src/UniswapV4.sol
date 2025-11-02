@@ -84,11 +84,12 @@ contract UniswapV4 is AccessControl {
 
         // Initialize pool via PositionManager's initializer interface
         // Note: This requires the PoolManager to be deployed and activated on the network
-        try POOL_MANAGER.initialize(poolKey, sqrtPriceX96) {
-            // Successfully initialized
-        } catch {
-            revert("PoolManager initialization failed - check if Uniswap v4 is deployed on this network");
-        }
+        POOL_MANAGER.initialize(poolKey, sqrtPriceX96);
+//        try POOL_MANAGER.initialize(poolKey, sqrtPriceX96) {
+//            // Successfully initialized
+//        } catch {
+//            revert("PoolManager initialization failed - check if Uniswap v4 is deployed on this network");
+//        }
         emit InitializePool(poolKey);
     }
 

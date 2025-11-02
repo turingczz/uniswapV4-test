@@ -148,6 +148,88 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
    }
 
    /**
+    * @dev Sets the token admin address
+    * Token admin can create tokens and pools
+    * @param _account Address of the token admin
+    */
+   function setTokenAdmin(address _account) public onlyOwner {
+       if (_account == address(0)) revert ZeroAddress("set tokenAdmin");
+       address oldTokenAdmin = tokenAdmin;
+       tokenAdmin = _account;
+       emit TokenAdminChanged(msg.sender, oldTokenAdmin, tokenAdmin);
+   }
+
+   /**
+    * @dev Sets the airdrop admin address
+    * Airdrop admin can perform airdrop operations
+    * @param _account Address of the airdrop admin
+    */
+   function setAirdropAdmin(address _account) public onlyOwner {
+       if (_account == address(0)) revert ZeroAddress("set airdropAdmin");
+       address oldAirdropAdmin = airdropAdmin;
+       airdropAdmin = _account;
+       emit AirdropAdminChanged(msg.sender, oldAirdropAdmin, airdropAdmin);
+   }
+
+   /**
+    * @dev Sets the refund admin address
+    * Refund admin can perform refund operations
+    * @param _account Address of the refund admin
+    */
+   function setRefundAdmin(address _account) public onlyOwner {
+       if (_account == address(0)) revert ZeroAddress("set refundAdmin");
+       address oldRefundAdmin = refundAdmin;
+       refundAdmin = _account;
+       emit RefundAdminChanged(msg.sender, oldRefundAdmin, refundAdmin);
+   }
+
+   /**
+    * @dev Sets the fee recipient address
+    * Fee recipient receives protocol fees
+    * @param _account Address of the fee recipient
+    */
+   function setFeeTo(address _account) public onlyOwner {
+       if (_account == address(0)) revert ZeroAddress("set feeTo");
+       address oldFeeTo = feeTo;
+       feeTo = _account;
+       emit FeeToChanged(msg.sender, oldFeeTo, feeTo);
+   }
+
+   /**
+    * @dev Sets the swap fee recipient address
+    * Swap fee recipient receives swap fees
+    * @param _account Address of the swap fee recipient
+    */
+   function setSwapFeeTo(address _account) public onlyOwner {
+       if (_account == address(0)) revert ZeroAddress("set swapFeeTo");
+       address oldSwapFeeTo = swapFeeTo;
+       swapFeeTo = _account;
+       emit SwapFeeToChanged(msg.sender, oldSwapFeeTo, swapFeeTo);
+   }
+
+   /**
+    * @dev Sets the protocol fee rate
+    * Fee rate is expressed in basis points (1e18 = 100%)
+    * @param _rate Fee rate in basis points
+    */
+   function setFeeRate(uint256 _rate) public onlyOwner {
+       uint256 oldFeeRate = feeRate;
+       feeRate = _rate;
+       emit FeeRateChanged(msg.sender, oldFeeRate, feeRate);
+   }
+
+   /**
+    * @dev Sets the swap fee rate
+    * Swap fee rate is expressed in basis points (1e18 = 100%)
+    * @param _rate Swap fee rate in basis points
+    */
+   function setSwapFeeRate(uint256 _rate) public onlyOwner {
+       uint256 oldSwapFeeRate = swapFeeRate;
+       swapFeeRate = _rate;
+       emit SwapFeeRateChanged(msg.sender, oldSwapFeeRate, swapFeeRate);
+   }
+
+   /**
     * @dev Updates the address authorized to migrate stakes
     * @param _caller New address authorized for migration operations
     */
@@ -427,6 +509,15 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
    event Withdraw(address msgSender, StakeItem stakeItem, uint256 withdrawTimestamp);
    event MigrateStake(address msgSender, StakeItem stakeItem, uint256 migrateTimestamp);
    event MigrateCallerChanged(address adminSetter, address oldCaller, address newCaller);
+   
+   // Admin events
+   event TokenAdminChanged(address adminSetter, address oldTokenAdmin, address newTokenAdmin);
+   event AirdropAdminChanged(address adminSetter, address oldAirdropAdmin, address newAirdropAdmin);
+   event RefundAdminChanged(address adminSetter, address oldRefundAdmin, address newRefundAdmin);
+   event FeeToChanged(address adminSetter, address oldFeeTo, address newFeeTo);
+   event SwapFeeToChanged(address adminSetter, address oldSwapFeeTo, address newSwapFeeTo);
+   event FeeRateChanged(address adminSetter, uint256 oldFeeRate, uint256 newFeeRate);
+   event SwapFeeRateChanged(address adminSetter, uint256 oldSwapFeeRate, uint256 newSwapFeeRate);
 
    // Period event definitions
    event PeriodCreated(address adminSetter, uint32 indexed period, uint32 startTimestamp, uint256 ndays, uint32 endTimestamp, uint256 apr, uint256 stakeCap);

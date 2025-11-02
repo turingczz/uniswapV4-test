@@ -3,7 +3,7 @@ pragma solidity ^0.8.26;
 
 import { Script } from "lib/forge-std/src/Script.sol";
 import { console } from "forge-std/console.sol";
-import { UniswapV4 } from "../src/UniswapV4.sol";
+import { Ping } from "../src-other-app/V4.sol";
 
 contract DeployScript is Script {
     function run() external {
@@ -11,7 +11,7 @@ contract DeployScript is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        UniswapV4 imp = new UniswapV4();
+        Ping imp = new Ping();
 
         vm.stopBroadcast();
 
@@ -23,10 +23,10 @@ contract DeployScript is Script {
 需要部署好后，使用cast脚本测试。例如：execute_v4_functions.sh
 
 部署命令:
-forge script script/DeployLogicV4.sol:DeployScript \
+forge script script/DeployLogicV4-2.sol:DeployScript \
     --rpc-url=sepolia \
     --broadcast \
-    --legacy --verify
+    --legacy
 
 forge script script/DeployLogicV4.sol:DeployScript \
     --rpc-url=base \

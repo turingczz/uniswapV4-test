@@ -17,4 +17,6 @@ docs/
 # Node modules
 node_modules/
 broadcast/*
-execute_v4_functions.sh
+script/execute_v4_functions.sh
+script_use_v4/execute_*
+script/1*

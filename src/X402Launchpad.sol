@@ -38,6 +38,9 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
    mapping (IERC20 => mapping (uint => bool)) public refunded;//id是否退款
 
    constructor() {
+       // 由于调用了_disableInitializers()，无法通过initialize初始化
+       // 直接设置部署者为所有者
+       _transferOwnership(msg.sender);
        _disableInitializers();
    }
 
@@ -65,13 +68,13 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
             paymentTokenAmount: 100,
             newTokenAmount: 100,
             paymentTokenIsToken0: 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238 < 0x0A3728E805073E5Aaf6755C872336c50b27114Ed,
-            sqrtPricePaymentTokenFirst: 0,
-            sqrtPriceNewTokenFirst: 0
+            sqrtPricePaymentTokenFirst: 79228162514264337593543950336,
+            sqrtPriceNewTokenFirst: 79228162514264337593543950336
         });
             // sqrtPricePaymentTokenFirst: 79228162514264337593543950336,
             // sqrtPriceNewTokenFirst: 79228162514264337593543950336,
-        (p.sqrtPricePaymentTokenFirst, p.sqrtPriceNewTokenFirst) = 
-            _calculateSqrtPrices(p.paymentTokenAmount, p.newTokenAmount, p.paymentTokenIsToken0);
+        // (p.sqrtPricePaymentTokenFirst, p.sqrtPriceNewTokenFirst) = 
+            // _calculateSqrtPrices(p.paymentTokenAmount, p.newTokenAmount, p.paymentTokenIsToken0);
         _initializePool(p, 211, 200);
 
         IERC20 token = IERC20(p.newToken);
