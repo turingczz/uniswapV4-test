@@ -37,13 +37,13 @@ contract X402Launchpad is LaunchpadCommon {
    mapping (IERC20 => mapping (uint => bool)) public refunded;//id是否退款
 
    //new
-   address public tokenAdmin;
-   address public airdropAdmin;
-   address public refundAdmin;
-   address public feeTo;
-   address public swapFeeTo;
-   uint256 public feeRate;
-   uint256 public swapFeeRate;
+//   address public tokenAdmin;
+//   address public airdropAdmin;
+//   address public refundAdmin;
+//   address public feeTo;
+//   address public swapFeeTo;
+//   uint256 public feeRate;
+//   uint256 public swapFeeRate;
 
    constructor() {
        _disableInitializers();
@@ -58,10 +58,10 @@ contract X402Launchpad is LaunchpadCommon {
    //角色三： 退款
 
    //创建token，创建交易池
-   function createTokenAndCreatePool(string memory _name, string memory _symbol, uint8 _decimals, uint _cap, IERC20 currency, uint amount, uint quota, uint start, uint expiry) external payable nonReentrant whenNotPaused {
+   function createTokenAndCreatePool(string memory _name, string memory _symbol, uint8 _decimals, uint _cap, IERC20 _currency, uint _amount, uint _quota, uint _start, uint _expiry) external payable nonReentrant whenNotPaused {
        require(msg.sender == tokenAdmin, "token admin only");
-       require(start < expiry && block.timestamp < expiry, "too early expiry");
-       require(_cap > 0 && amount > 0 && quota > 0, "Invalid cap, amount or quota");
+       require(_start < _expiry && block.timestamp < _expiry, "too early expiry");
+       require(_cap > 0 && _amount > 0 && _quota > 0, "Invalid cap, amount or quota");
        require(tokens[_symbol] == IERC20(address(0)), "Token exists!"); //检查平台是否存在该token
 
        IERC20 token = IERC20(new ERC3009Token(_name, _symbol, _decimals, uint8(_cap)));
@@ -71,27 +71,27 @@ contract X402Launchpad is LaunchpadCommon {
 
        tokens[_symbol] = token;
        supplies[token] = _cap;
-       currencies[token] = currency;
-       amounts[token] = amount;
+       currencies[token] = _currency;
+       amounts[token] = _amount;
        feeRates[token] = feeRate;
        pools[token] = pool;
 
-       quotas[token] = quota;
-       starts[token] = start;
-       expiries[token] = expiry;
+       quotas[token] = _quota;
+       starts[token] = _start;
+       expiries[token] = _expiry;
    }
    event CreateTokenAndCreatePool(address msgSender, string _symbol, IERC20 indexed token, address pool, uint timestamp);
 
    //Completed
-   function addLiquidity(IERC20 token, bool success) external payable nonReentrant whenNotPaused {
+   function addLiquidity(IERC20 _token, bool _preSaleSuccess) external payable nonReentrant whenNotPaused {
        require(msg.sender == tokenAdmin, "create token admin only");
-       require(amounts[token] > 0, "invalid token");
-       require(perSales[token].timestamp > 0, "already added liquidity");
+       require(amounts[_token] > 0, "invalid token");
+       require(perSales[_token].timestamp > 0, "already added liquidity");
 
-       if (!success) {
-           perSales[token].success = false;
-           perSales[token].addedLiquidity = false;
-           perSales[token].timestamp = block.timestamp;
+       if (!_preSaleSuccess) {
+           perSales[_token].success = false;
+           perSales[_token].addedLiquidity = false;
+           perSales[_token].timestamp = block.timestamp;
 //           emit AddLiquidity(msg.sender, token, success, block.timestamp);
            return;
        }
@@ -101,10 +101,10 @@ contract X402Launchpad is LaunchpadCommon {
 //       (lpTokenIds[token],amountLP) = FunPool.addPool(address(token), supplies[token]/2, address(currency), amounts[token] - feeRateAmount);
 //       currency.safeTransfer(feeTo, amounts[token] - amountLP);
 
-       perSales[token].success = true;
-       perSales[token].addedLiquidity = true;
-       perSales[token].timestamp = block.timestamp;
-       emit AddedLiquidity(msg.sender, token, success, block.timestamp);
+       perSales[_token].success = true;
+       perSales[_token].addedLiquidity = true;
+       perSales[_token].timestamp = block.timestamp;
+       emit AddedLiquidity(msg.sender, _token, _preSaleSuccess, block.timestamp);
    }
    event AddedLiquidity(address msgSender, IERC20 indexed token, bool success, uint timestamp);
 
@@ -112,37 +112,37 @@ contract X402Launchpad is LaunchpadCommon {
 
 
    //空投，打满添加流动性后，官方会发放一半的代币给用户
-   function airdrops(IERC20 token, uint256[] calldata ids, address[] calldata tos, uint[] calldata _amounts) external nonReentrant whenNotPaused {
+   function airdrops(IERC20 _token, uint256[] calldata _ids, address[] calldata _tos, uint[] calldata _amounts) external nonReentrant whenNotPaused {
        require(msg.sender == airdropAdmin, "airdrop admin only");
-       require(ids.length == tos.length && ids.length == _amounts.length, "invalid length");
+       require(_ids.length == _tos.length && _ids.length == _amounts.length, "invalid length");
 
-       for(uint i = 0; i < ids.length; i++) {
-           _airdrop(token, ids[i], tos[i], _amounts[i]);
+       for(uint i = 0; i < _ids.length; i++) {
+           _airdrop(_token, _ids[i], _tos[i], _amounts[i]);
        }
    }
-   function _airdrop(IERC20 token, uint id, address to, uint amount) internal {
-       require(airdropped[token][id] == false, "airdropped already");
-       airdropped[token][id] = true;
+   function _airdrop(IERC20 _token, uint _id, address _to, uint _amount) internal {
+       require(airdropped[_token][_id] == false, "airdropped already");
+       airdropped[_token][_id] = true;
 
-       airdroppedAmount[token][to] += amount;
-       require(airdroppedAmount[token][to] <= quotas[token], "exceed user amount");
+       airdroppedAmount[_token][_to] += _amount;
+       require(airdroppedAmount[_token][_to] <= quotas[_token], "exceed user amount");
 
-       require(perSales[token].addedLiquidity, "need to add liquidity");
+       require(perSales[_token].addedLiquidity, "need to add liquidity");
 
        //1.amount是x402支付的时候就确定的
        //2.token本身就在合约中，直接转移则ok
-       token.safeTransfer(to, amount);
-       emit Airdropped(msg.sender, id, token, to, amount);
+       _token.safeTransfer(_to, _amount);
+       emit Airdropped(msg.sender, _id, _token, _to, _amount);
    }
    event Airdropped(address sender, uint id, IERC20 indexed token, address indexed to, uint amount);
 
    //退款，只能在结束时间之后，官方调用
-   function refunds(IERC20 token, uint256[] calldata ids, address[] calldata tos, uint[] calldata _amounts) external nonReentrant whenNotPaused {
+   function refunds(IERC20 _token, uint256[] calldata _ids, address[] calldata _tos, uint[] calldata _amounts) external nonReentrant whenNotPaused {
        require(msg.sender == refundAdmin, "refund admin only");
-       require(ids.length == tos.length && ids.length == _amounts.length, "invalid length");
+       require(_ids.length == _tos.length && _ids.length == _amounts.length, "invalid length");
 
-       for(uint i = 0; i < ids.length; i++) {
-           _refund(token, ids[i], tos[i], _amounts[i]);
+       for(uint i = 0; i < _ids.length; i++) {
+           _refund(_token, _ids[i], _tos[i], _amounts[i]);
        }
    }
    function _refund(IERC20 token, uint id, address to, uint amount) internal {
@@ -177,22 +177,22 @@ contract X402Launchpad is LaunchpadCommon {
 //    }
 //
    //更新设置开始时间和结束时间
-   function setTokenTimes(IERC20 token, uint start, uint expiry) external onlyOwner {
-       require(amounts[token] > 0, "invalid token");
-       require(start > 0 && expiry > 0 && expiry > start, "invalid start or expiry");
+   function setTokenTimes(IERC20 _token, uint _start, uint _expiry) external onlyOwner {
+       require(amounts[_token] > 0, "invalid token");
+       require(_start > 0 && _expiry > 0 && _expiry > _start, "invalid start or expiry");
 
-       emit SetTimes(msg.sender, token, starts[token], expiries[token], start, expiry);
-       starts[token] = start;
-       expiries[token] = expiry;
+       emit SetTimes(msg.sender, _token, starts[_token], expiries[_token], _start, _expiry);
+       starts[_token] = _start;
+       expiries[_token] = _expiry;
    }
    event SetTimes(address indexed sender, IERC20 indexed token, uint oldStart, uint oldExpiry, uint start, uint expiry);
 
-   function getTokenInfo(IERC20 token) public view returns(uint,IERC20,uint,uint,uint, PreSale memory) {
-       require(amounts[token] > 0, "invalid token");
-       return (supplies[token], currencies[token], amounts[token], starts[token], expiries[token], perSales[token]);
+   function getTokenInfo(IERC20 _token) public view returns(uint,IERC20,uint,uint,uint, PreSale memory) {
+       require(amounts[_token] > 0, "invalid token");
+       return (supplies[_token], currencies[_token], amounts[_token], starts[_token], expiries[_token], perSales[_token]);
    }
 
-   function getFeeRateAmount(uint amount, uint _feeRate) public pure returns(uint) {
-       return amount * _feeRate / 1e18;
+   function getFeeRateAmount(uint _amount, uint _feeRate) public pure returns(uint) {
+       return _amount * _feeRate / 1e18;
    }
 }

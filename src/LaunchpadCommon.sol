@@ -36,13 +36,13 @@ contract LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
 
 
    //new
-//   address public tokenAdmin;
-//   address public airdropAdmin;
-//   address public refundAdmin;
-//   address public feeTo;
-//   address public swapFeeTo;
-//   uint256 public feeRate;
-//   uint256 public swapFeeRate;
+   address public tokenAdmin;
+   address public airdropAdmin;
+   address public refundAdmin;
+   address public feeTo;
+   address public swapFeeTo;
+   uint256 public feeRate;
+   uint256 public swapFeeRate;
 
    // Period struct
    struct PeriodConfig {
