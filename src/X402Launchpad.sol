@@ -18,7 +18,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
    struct PreSale {
        bool success;
        bool addedLiquidity;
-       uint256 timestamp;
+       uint256 updateTimestamp;
    }
 
    mapping (string => IERC20) public tokens;
@@ -59,25 +59,20 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
        require(_cap > 0 && _amount > 0 && _quota > 0, "Invalid cap, amount or quota");
        require(tokens[_symbol] == IERC20(address(0)), "Token exists!"); //检查平台是否存在该token
 
-    //    IERC20 token = IERC20(new ERC3009Token(_name, _symbol, _decimals, uint8(_cap)));
-    //    address pool;
-
+        IERC20 token = IERC20(new ERC3009Token(_name, _symbol, _decimals, uint8(_cap)));
         TokenParams memory p = TokenParams({
             paymentToken: 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238,
             newToken: 0x0A3728E805073E5Aaf6755C872336c50b27114Ed,
             paymentTokenAmount: 100,
             newTokenAmount: 100,
             paymentTokenIsToken0: 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238 < 0x0A3728E805073E5Aaf6755C872336c50b27114Ed,
-            sqrtPricePaymentTokenFirst: 79228162514264337593543950336,
-            sqrtPriceNewTokenFirst: 79228162514264337593543950336
+            sqrtPricePaymentTokenFirst: 0,
+            sqrtPriceNewTokenFirst: 0
         });
-            // sqrtPricePaymentTokenFirst: 79228162514264337593543950336,
-            // sqrtPriceNewTokenFirst: 79228162514264337593543950336,
-        // (p.sqrtPricePaymentTokenFirst, p.sqrtPriceNewTokenFirst) = 
-            // _calculateSqrtPrices(p.paymentTokenAmount, p.newTokenAmount, p.paymentTokenIsToken0);
+         (p.sqrtPricePaymentTokenFirst, p.sqrtPriceNewTokenFirst) = _calculateSqrtPrices(
+             p.paymentTokenAmount, p.newTokenAmount, p.paymentTokenIsToken0);
         _initializePool(p, 211, 200);
 
-        IERC20 token = IERC20(p.newToken);
        tokens[_symbol] = token;
        supplies[token] = _cap;
        currencies[token] = _currency;
@@ -89,18 +84,18 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
        starts[token] = _start;
        expires[token] = _expiry;
    }
-   event CreateTokenAndCreatePool(address msgSender, string _symbol, IERC20 indexed token, address pool, uint timestamp);
+   event CreateTokenAndCreatePool(address msgSender, string _symbol, IERC20 indexed token, uint timestamp);
 
    //Completed
    function addLiquidity(IERC20 _token, bool _preSaleSuccess) external payable nonReentrant whenNotPaused {
        require(msg.sender == tokenAdmin, "create token admin only");
        require(amounts[_token] > 0, "invalid token");
-       require(perSales[_token].timestamp > 0, "already added liquidity");
+       require(perSales[_token].updateTimestamp > 0, "already added liquidity");
 
        if (!_preSaleSuccess) {
            perSales[_token].success = false;
            perSales[_token].addedLiquidity = false;
-           perSales[_token].timestamp = block.timestamp;
+           perSales[_token].updateTimestamp = block.timestamp;
           emit AddedLiquidity(msg.sender, _token, false, block.timestamp);
            return;
        }
@@ -114,7 +109,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
 
        perSales[_token].success = true;
        perSales[_token].addedLiquidity = true;
-       perSales[_token].timestamp = block.timestamp;
+       perSales[_token].updateTimestamp = block.timestamp;
        emit AddedLiquidity(msg.sender, _token, _preSaleSuccess, block.timestamp);
    }
    event AddedLiquidity(address msgSender, IERC20 indexed token, bool success, uint timestamp);
@@ -159,7 +154,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
    function _refund(IERC20 token, uint id, address to, uint amount) internal {
        require(refunded[token][id] == false, "airdropped already");
        refunded[token][id] = true;
-       require(!perSales[token].success && perSales[token].timestamp>0, "need to set failed");
+       require(!perSales[token].success && perSales[token].updateTimestamp >0, "need to set failed");
 
        uint fee = getFeeRateAmount(amount, feeRates[token]);
        uint refundAmount = amount - fee;
