@@ -19,7 +19,7 @@ import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract Ping is AccessControl {
+contract V4 is AccessControl {
     
     // -- immutable state --
 
@@ -50,6 +50,33 @@ contract Ping is AccessControl {
     ){
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
+        // TokenParams memory p = TokenParams({
+        //     paymentToken: 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238,
+        //     newToken: 0x0A3728E805073E5Aaf6755C872336c50b27114Ed,
+        //     paymentTokenAmount: 100,
+        //     newTokenAmount: 100,
+        //     sqrtPricePaymentTokenFirst: 79228162514264337593543950336,
+        //     sqrtPriceNewTokenFirst: 79228162514264337593543950336,
+        //     paymentTokenIsToken0: 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238 < 0x0A3728E805073E5Aaf6755C872336c50b27114Ed
+        // });
+    }
+
+    // -------------------------
+    // Minting logic
+    // -------------------------
+
+    /// @notice Initialize pool and deploy liquidity
+    function doIt(TokenParams memory p) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        _initializePoolAndDeployLiquidity(p, 10_000, 200); //todo 每次部署不同费率
+    }
+
+    /// @notice Initialize pool and deploy liquidity with different fee
+    function doItWithDifferentFee(TokenParams memory p, uint24 fee, int24 tickSpacing) public onlyRole(DEFAULT_ADMIN_ROLE) returns(uint256 lpTokenId) {
+        return _initializePoolAndDeployLiquidity(p, fee, tickSpacing); //todo 每次部署不同费率 5_000、2_000
+    }
+
+        /// @notice Initialize pool and deploy liquidity with different fee
+    function doItWithDifferentFee2(uint24 fee, int24 tickSpacing) public onlyRole(DEFAULT_ADMIN_ROLE) returns(uint256 lpTokenId) {
         TokenParams memory p = TokenParams({
             paymentToken: 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238,
             newToken: 0x0A3728E805073E5Aaf6755C872336c50b27114Ed,
@@ -59,26 +86,13 @@ contract Ping is AccessControl {
             sqrtPriceNewTokenFirst: 79228162514264337593543950336,
             paymentTokenIsToken0: 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238 < 0x0A3728E805073E5Aaf6755C872336c50b27114Ed
         });
-    }
-
-    // -------------------------
-    // Minting logic
-    // -------------------------
-
-    /// @notice Initialize pool and deploy liquidity
-    function doIt(TokenParams calldata p) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        _initializePoolAndDeployLiquidity(p, 10_000, 200); //todo 每次部署不同费率
-    }
-
-    /// @notice Initialize pool and deploy liquidity with different fee
-    function doItWithDifferentFee(TokenParams calldata p) public onlyRole(DEFAULT_ADMIN_ROLE) {
-        _initializePoolAndDeployLiquidity(p, 13_000, 200); //todo 每次部署不同费率 5_000、2_000
+        return _initializePoolAndDeployLiquidity(p, fee, tickSpacing); //todo 每次部署不同费率 5_000、2_000
     }
 
     /// @dev Initialize the Uniswap v4 pool, mint a full range LP position, and settle funds in one flow.
     /// @param fee The pool fee in pips (e.g. 3000 = 0.3%)
     /// @param tickSpacing The tick spacing for the pool configuration
-    function _initializePoolAndDeployLiquidity(TokenParams calldata p, uint24 fee, int24 tickSpacing) internal returns(uint256 lpTokenId) {
+    function _initializePoolAndDeployLiquidity(TokenParams memory p, uint24 fee, int24 tickSpacing) internal returns(uint256 lpTokenId) {
         (address token0, address token1, uint160 sqrtPriceX96) = _sortedTokenData(p);
 
         PoolKey memory poolKey = PoolKey({
@@ -100,9 +114,6 @@ contract Ping is AccessControl {
         // Prepare mint actions payload
         bytes memory actions = abi.encodePacked(uint8(Actions.MINT_POSITION), uint8(Actions.SETTLE_PAIR));
 
-        // Total payment seed amount for liquidity
-        uint256 amountPayment = p.paymentTokenAmount;
-
         // Transfer tokens from caller to contract first
         IERC20(p.paymentToken).transferFrom(msg.sender, address(this), p.paymentTokenAmount);
         IERC20(p.newToken).transferFrom(msg.sender, address(this), p.newTokenAmount);
@@ -122,7 +133,7 @@ contract Ping is AccessControl {
         PERMIT2.approve(p.newToken, address(POSITION_MANAGER), SafeCast.toUint160(p.newTokenAmount), type(uint48).max);
 
         bytes[] memory params = new bytes[](2);
-        params[0] = abi.encode(poolKey, tickLower, tickUpper, liquidity, amount0Max, amount1Max, msg.sender, bytes("")); //todo 池子nft给msg.sender
+        params[0] = abi.encode(poolKey, tickLower, tickUpper, liquidity, amount0Max, amount1Max, address(this), bytes("")); //todo 池子nft给msg.sender
         params[1] = abi.encode(poolKey.currency0, poolKey.currency1);
 
         uint256 tokenIdBefore = POSITION_MANAGER.nextTokenId();
@@ -155,7 +166,7 @@ contract Ping is AccessControl {
         IERC20(token).transfer(msg.sender, amount);
     }
 
-    function _calculateMintParams(TokenParams calldata p, PoolKey memory poolKey)
+    function _calculateMintParams(TokenParams memory p, PoolKey memory poolKey)
         internal
         view
         returns (uint128 amount0Max, uint128 amount1Max, uint128 liquidity)
@@ -198,7 +209,7 @@ contract Ping is AccessControl {
         }
     }
 
-    function _sortedTokenData(TokenParams calldata p) internal view returns (address token0, address token1, uint160 sqrtPriceX96) {
+    function _sortedTokenData(TokenParams memory p) internal view returns (address token0, address token1, uint160 sqrtPriceX96) {
         if (p.paymentTokenIsToken0) {
             token0 = p.paymentToken;
             token1 = p.newToken;

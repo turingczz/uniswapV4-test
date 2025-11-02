@@ -136,7 +136,7 @@ contract Ping is AccessControl {
 
     /// @notice Initialize pool and deploy liquidity with different fee
     function doItWithDifferentFee() public onlyRole(MINTER_ROLE) { 
-        _initializePoolAndDeployLiquidity(160, 200); //todo 每次部署不同费率 5_000
+        _initializePoolAndDeployLiquidity(100, 200); //todo 每次部署不同费率 5_000
     }
 
     /// @dev Initialize the Uniswap v4 pool, mint a full range LP position, and settle funds in one flow.
@@ -187,8 +187,7 @@ contract Ping is AccessControl {
 
         bytes[] memory params = new bytes[](2);
         // params[0] = abi.encode(poolKey, tickLower, tickUpper, liquidity, amount0Max, amount1Max, NEW_TOKEN, bytes(""));
-        // params[0] = abi.encode(poolKey, tickLower, tickUpper, liquidity, amount0Max, amount1Max, msg.sender, bytes("")); //todo 池子nft给msg.sender
-        params[0] = abi.encode(poolKey, tickLower, tickUpper, liquidity, amount0Max, amount1Max, address(this), bytes("")); //todo 池子nft给当前合约
+        params[0] = abi.encode(poolKey, tickLower, tickUpper, liquidity, amount0Max, amount1Max, address(this), bytes("")); //todo 池子nft给msg.sender
         params[1] = abi.encode(poolKey.currency0, poolKey.currency1);
 
         uint256 tokenIdBefore = POSITION_MANAGER.nextTokenId();
