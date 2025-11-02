@@ -64,10 +64,14 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
             newToken: 0x0A3728E805073E5Aaf6755C872336c50b27114Ed,
             paymentTokenAmount: 100,
             newTokenAmount: 100,
-            sqrtPricePaymentTokenFirst: 79228162514264337593543950336,
-            sqrtPriceNewTokenFirst: 79228162514264337593543950336,
-            paymentTokenIsToken0: 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238 < 0x0A3728E805073E5Aaf6755C872336c50b27114Ed
+            paymentTokenIsToken0: 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238 < 0x0A3728E805073E5Aaf6755C872336c50b27114Ed,
+            sqrtPricePaymentTokenFirst: 0,
+            sqrtPriceNewTokenFirst: 0
         });
+            // sqrtPricePaymentTokenFirst: 79228162514264337593543950336,
+            // sqrtPriceNewTokenFirst: 79228162514264337593543950336,
+        (p.sqrtPricePaymentTokenFirst, p.sqrtPriceNewTokenFirst) = 
+            _calculateSqrtPrices(p.paymentTokenAmount, p.newTokenAmount, p.paymentTokenIsToken0);
         _initializePool(p, 211, 200);
 
         IERC20 token = IERC20(p.newToken);
@@ -152,14 +156,12 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
    function _refund(IERC20 token, uint id, address to, uint amount) internal {
        require(refunded[token][id] == false, "airdropped already");
        refunded[token][id] = true;
-
        require(!perSales[token].success && perSales[token].timestamp>0, "need to set failed");
 
        uint fee = getFeeRateAmount(amount, feeRates[token]);
        uint refundAmount = amount - fee;
-//       address feeTo = feeTo;
-		IERC20 currency = currencies[token];
 
+	    IERC20 currency = currencies[token];
        currency.safeTransfer(feeTo, fee);
        currency.safeTransfer(to, refundAmount);
        emit Refund(token, id, to, fee, refundAmount);
@@ -170,18 +172,19 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
    function collectFees(IERC20 _token) external nonReentrant {
        require(address(_token) != address(0), "invalid token");
        require(amounts[_token] > 0, "not exist token");
-       address swapFeeCurrency;
        uint lpTokenId = lpTokenIds[_token];
         
-        //feeTo 是合约地址，需要手动提取
-       IERC20 currency = IERC20(swapFeeCurrency);
-       uint amountBefore = currency.balanceOf(address(this));
-       
-       collectLpFees(lpTokenId); //todo 测试一下fee提取到哪里了，怎么正确配置一下；如果知道哪个用户调用；直接nft转给这个地址比较合适
-        //是否提取到本合约中了，如果是从合约中提取
+       collectLpFees(lpTokenId);
 
-        uint amountAfter = currency.balanceOf(address(this));
-       currency.safeTransfer(swapFeeTo, amountAfter - amountBefore);
+    //     //feeTo 是合约地址，需要手动提取
+    //    IERC20 swapFeeCurrency;
+    //    uint amountBefore = swapFeeCurrency.balanceOf(address(this));
+       
+    //    collectLpFees(lpTokenId); //todo 测试一下fee提取到哪里了，怎么正确配置一下；如果知道哪个用户调用；直接nft转给这个地址比较合适
+    //     //是否提取到本合约中了，如果是从合约中提取
+
+    //     uint amountAfter = swapFeeCurrency.balanceOf(address(this));
+    //    swapFeeCurrency.safeTransfer(swapFeeTo, amountAfter - amountBefore);
    }
 
    //更新设置开始时间和结束时间
@@ -203,7 +206,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
    function getFeeRateAmount(uint _amount, uint _feeRate) public pure returns(uint) {
        return _amount * _feeRate / 1e18;
    }
-
+   
     // Override functions to resolve diamond inheritance conflict
     function _msgSender() internal view virtual override(Context, ContextUpgradeable) returns (address) {
         return ContextUpgradeable._msgSender();
