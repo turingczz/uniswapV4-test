@@ -3,7 +3,7 @@ pragma solidity ^0.8.26;
 
 import { Script } from "lib/forge-std/src/Script.sol";
 import { console } from "forge-std/console.sol";
-import { V4 } from "../src/V4.sol";
+import { UniswapV4 } from "../src/UniswapV4.sol";
 
 contract DeployScript is Script {
     function run() external {
@@ -11,7 +11,7 @@ contract DeployScript is Script {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        V4 imp = new V4();
+        UniswapV4 imp = new UniswapV4();
 
         vm.stopBroadcast();
 

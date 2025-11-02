@@ -5,12 +5,11 @@ pragma abicoder v2;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "./LaunchpadCommon.sol";
 import "./ERC3009Token.sol";
-import "./v4.sol";
+import "./UniswapV4.sol";
+import "./X402LaunchpadCommon.sol";
 
-
-contract X402Launchpad is LaunchpadCommon {
+contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
 	using SafeERC20 for IERC20;
    string public constant version = "1.0.0";
 
@@ -26,7 +25,7 @@ contract X402Launchpad is LaunchpadCommon {
    mapping (IERC20 => uint) public amounts;
    mapping (IERC20 => uint) public quotas;
    mapping (IERC20 => uint) public starts;
-   mapping (IERC20 => uint) public expiries;
+   mapping (IERC20 => uint) public expires;
    mapping (IERC20 => uint) public feeRates;
 
    mapping (IERC20 => address) public pools;
@@ -35,15 +34,6 @@ contract X402Launchpad is LaunchpadCommon {
    mapping (IERC20 => mapping (uint => bool)) public airdropped;//id是否空投
    mapping (IERC20 => mapping (address => uint)) public airdroppedAmount;//用户空投额度
    mapping (IERC20 => mapping (uint => bool)) public refunded;//id是否退款
-
-   //new
-//   address public tokenAdmin;
-//   address public airdropAdmin;
-//   address public refundAdmin;
-//   address public feeTo;
-//   address public swapFeeTo;
-//   uint256 public feeRate;
-//   uint256 public swapFeeRate;
 
    constructor() {
        _disableInitializers();
@@ -78,7 +68,7 @@ contract X402Launchpad is LaunchpadCommon {
 
        quotas[token] = _quota;
        starts[token] = _start;
-       expiries[token] = _expiry;
+       expires[token] = _expiry;
    }
    event CreateTokenAndCreatePool(address msgSender, string _symbol, IERC20 indexed token, address pool, uint timestamp);
 
@@ -181,15 +171,15 @@ contract X402Launchpad is LaunchpadCommon {
        require(amounts[_token] > 0, "invalid token");
        require(_start > 0 && _expiry > 0 && _expiry > _start, "invalid start or expiry");
 
-       emit SetTimes(msg.sender, _token, starts[_token], expiries[_token], _start, _expiry);
+       emit SetTimes(msg.sender, _token, starts[_token], expires[_token], _start, _expiry);
        starts[_token] = _start;
-       expiries[_token] = _expiry;
+       expires[_token] = _expiry;
    }
    event SetTimes(address indexed sender, IERC20 indexed token, uint oldStart, uint oldExpiry, uint start, uint expiry);
 
    function getTokenInfo(IERC20 _token) public view returns(uint,IERC20,uint,uint,uint, PreSale memory) {
        require(amounts[_token] > 0, "invalid token");
-       return (supplies[_token], currencies[_token], amounts[_token], starts[_token], expiries[_token], perSales[_token]);
+       return (supplies[_token], currencies[_token], amounts[_token], starts[_token], expires[_token], perSales[_token]);
    }
 
    function getFeeRateAmount(uint _amount, uint _feeRate) public pure returns(uint) {
