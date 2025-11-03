@@ -32,20 +32,28 @@ contract UniswapV4 {
     // -- immutable state --
 
     /// @notice The pool manager (Uniswap v4 PoolManager)
-    IPoolManager public constant POOL_MANAGER = IPoolManager(0xE03A1074c86CFeDd5C142C4F04F1a1536e203543);
+    IPoolManager public immutable POOL_MANAGER;
 
     /// @notice The PositionManager for managing liquidity NFTs
-    IPositionManager public constant POSITION_MANAGER = IPositionManager(0x429ba70129df741B2Ca2a85BC3A2a3328e5c09b4);
+    IPositionManager public immutable POSITION_MANAGER;
 
     /// @notice Permit2 for token approvals
-    IAllowanceTransfer public constant PERMIT2 = IAllowanceTransfer(0x000000000022D473030F116dDEE9F6B43aC78BA3);
+    IAllowanceTransfer public immutable PERMIT2;
 
     // event
     event InitializePool(PoolKey poolKey);
     event LiquidityDeployed(uint256 tokenId, uint128 liquidity);
     event FeesCollected(address recipient, uint256 amountToken0, uint256 amountToken1);
 
-    constructor(){}
+    constructor(address _poolManger, address _positionManger, address _permit2) {
+        if (_poolManger == address(0)) revert("UniswapV4: pool manager is zero address");
+        if (_positionManger == address(0)) revert("UniswapV4: position manager is zero address");
+        if (_permit2 == address(0)) revert("UniswapV4: permit2 is zero address");
+
+        POOL_MANAGER = IPoolManager(_poolManger);
+        POSITION_MANAGER = IPositionManager(_positionManger);
+        PERMIT2 = IAllowanceTransfer(_permit2);
+    }
 
     /// @dev Initialize the Uniswap v4 pool, mint a full range LP position, and settle funds in one flow.
     /// @param fee The pool fee in pips (e.g. 3000 = 0.3%)
@@ -119,7 +127,7 @@ contract UniswapV4 {
 
     /// @notice Collect outstanding fees from the protocol-owned LP position to the owner
     function _collectLpFees(uint256 lpTokenId) internal {
-        require(lpTokenId != 0, "LP_NOT_INITIALIZED");
+        if (lpTokenId == 0) revert("LP_NOT_INITIALIZED");
 
         (PositionPoolKey memory poolKey,) = POSITION_MANAGER.getPoolAndPositionInfo(lpTokenId);
 
@@ -188,47 +196,38 @@ contract UniswapV4 {
         }
     }
 
-   /// @notice 根据两个token的数量计算sqrt价格
-   /// @param paymentTokenAmount 支付代币数量
-   /// @param newTokenAmount 新代币数量
-   /// @param paymentTokenIsToken0 支付代币是否为token0
-   /// @return sqrtPricePaymentTokenFirst 支付代币优先的sqrt价格
-   /// @return sqrtPriceNewTokenFirst 新代币优先的sqrt价格
    function _calculateSqrtPrices(
        uint paymentTokenAmount,
        uint newTokenAmount,
        bool paymentTokenIsToken0
    ) internal pure returns (uint160 sqrtPricePaymentTokenFirst, uint160 sqrtPriceNewTokenFirst) {
-       require(paymentTokenAmount > 0 && newTokenAmount > 0, "Amounts must be positive");
-       
-       // 计算价格比例 (Q64.96格式)
-       // 价格 = (token1数量 * 2^96) / token0数量
+       if (paymentTokenAmount == 0 || newTokenAmount == 0) revert("Amounts must be positive");
+
+        // Calculate the price ratio (Q64.96 format)
+        // Price = (token1 quantity * 2^96) / token0 quantity
        uint256 priceRatio;
        
        if (paymentTokenIsToken0) {
            // paymentToken是token0，newToken是token1
-           // 价格 = (newTokenAmount * 2^96) / paymentTokenAmount
+           // price = (newTokenAmount * 2^96) / paymentTokenAmount
            priceRatio = (uint256(newTokenAmount) << 96) / paymentTokenAmount;
            sqrtPricePaymentTokenFirst = uint160(_sqrt(priceRatio));
            
-           // 反向价格 = (paymentTokenAmount * 2^96) / newTokenAmount
+           // Reverse price = (paymentTokenAmount * 2^96) / newTokenAmount
            uint256 reversePriceRatio = (uint256(paymentTokenAmount) << 96) / newTokenAmount;
            sqrtPriceNewTokenFirst = uint160(_sqrt(reversePriceRatio));
        } else {
            // newToken是token0，paymentToken是token1
-           // 价格 = (paymentTokenAmount * 2^96) / newTokenAmount
+           // price = (paymentTokenAmount * 2^96) / newTokenAmount
            priceRatio = (uint256(paymentTokenAmount) << 96) / newTokenAmount;
            sqrtPriceNewTokenFirst = uint160(_sqrt(priceRatio));
            
-           // 反向价格 = (newTokenAmount * 2^96) / paymentTokenAmount
+           // Reverse price = (newTokenAmount * 2^96) / paymentTokenAmount
            uint256 reversePriceRatio = (uint256(newTokenAmount) << 96) / paymentTokenAmount;
            sqrtPricePaymentTokenFirst = uint160(_sqrt(reversePriceRatio));
        }
    }
 
-   /// @notice 计算平方根 (Babylonian method)
-   /// @param x 输入值
-   /// @return y 平方根结果
    function _sqrt(uint256 x) internal pure returns (uint256 y) {
        if (x == 0) return 0;
        

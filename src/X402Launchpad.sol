@@ -38,10 +38,11 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
    mapping (IERC20 => mapping (address => uint)) public airdroppedAmount;//用户空投额度
    mapping (IERC20 => mapping (uint => bool)) public refunded;//id是否退款
 
-   constructor() {
-       // 由于调用了_disableInitializers()，无法通过initialize初始化
-       // 直接设置部署者为所有者
-       _transferOwnership(msg.sender);
+   constructor(
+       address _poolManger,
+       address _positionManger,
+       address _permit2
+   ) UniswapV4(_poolManger, _positionManger, _permit2) {
        _disableInitializers();
    }
 
