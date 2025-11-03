@@ -27,7 +27,7 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
     address public swapFeeTo;
     uint256 public deployFeeRate; //default 50000 5%
     uint24 public swapFeeRate; //default 3000 0.3% 标准交易对（最常用）
-    uint256 public tokenAddLiquidityRate; //default 800000 20%
+    uint256 public tokenAddLiquidityRate; //default 200000 20%
 
     modifier nonReentrant() {
         if (_nonReentrantStatus != 0) revert ReentrancyGuardStatus();
@@ -100,7 +100,7 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
         swapFeeTo = _swapFeeTo;
         deployFeeRate = 50_000; //default 5%
         swapFeeRate = 10_000; //default 1%
-        tokenAddLiquidityRate = 800_000; //default 80%
+        tokenAddLiquidityRate = 200_000; //default 20%
 
         emit InitConfig(
             msg.sender,
