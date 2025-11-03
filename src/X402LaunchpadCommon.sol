@@ -13,11 +13,7 @@ import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/I
  * This contract is designed to be inherited by specific staking implementations
  */
 contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
-    uint256 public constant MIN_AMOUNT = 1e15;
-    uint256 public constant ONE_MBTC = 1e18;
-    uint256 public constant SECONDS_PER_YEAR = 365 * 86_400;
     uint256 public constant SCALE_FACTOR = 1e6;
-    uint32 public constant SECONDS_PER_DAY = 86_400;
     uint256 private _nonReentrantStatus;
     address public pauseAdmin;
     bool public paused;
