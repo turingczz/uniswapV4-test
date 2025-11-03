@@ -48,10 +48,6 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         super.initialize(_initialOwner);
     }
 
-   //角色一： 创建token，添加流动性
-   //角色二： 空投token
-   //角色三： 退款
-
    //创建token，创建交易池
    function createTokenAndCreatePool(string memory _name, string memory _symbol, uint8 _decimals, uint _cap, IERC20 _currency, uint _amount, uint _quota, uint _start, uint _expiry) external payable nonReentrant whenNotPaused {
        require(msg.sender == createTokenAdmin, "token admin only");
@@ -60,13 +56,13 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
        require(tokens[_symbol] == IERC20(address(0)), "Token exists!"); //检查平台是否存在该token
 
        IERC20 token = IERC20(new ERC3009Token(_name, _symbol, _decimals, uint8(_cap)));
-       bool paymentTokenIsToken0 = paymentToken < address(token);
-       uint256 preAmountAdd = _amount * tokenAddRate / SCALE_FACTOR; //20%
-       uint256 amountAdd = preAmountAdd - getFeeRateAmount(preAmountAdd, feeRate); //feeRate 5%
-       uint256 supplyAdd = _cap * tokenAddRate / SCALE_FACTOR; //20%
+       bool paymentTokenIsToken0 = address(_currency) < address(token);
+       uint256 preAmountAdd = _amount * tokenAddLiquidityRate / SCALE_FACTOR; //20%
+       uint256 amountAdd = preAmountAdd - getFeeRateAmount(preAmountAdd, deployFeeRate); //feeRate 5%
+       uint256 supplyAdd = _cap * tokenAddLiquidityRate / SCALE_FACTOR; //20%
 
        TokenParams memory p = TokenParams({
-            paymentToken: paymentToken,
+            paymentToken: usdcReceiveAddress,
             newToken: address(token),
             paymentTokenAmount: amountAdd,
             newTokenAmount: supplyAdd,
@@ -76,16 +72,14 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         });
          (p.sqrtPricePaymentTokenFirst, p.sqrtPriceNewTokenFirst) = _calculateSqrtPrices(
              amountAdd, supplyAdd, paymentTokenIsToken0);
-        _initializePool(p, uint24(feeRate), 200);
+        _initializePool(p, uint24(deployFeeRate), 200);
        emit CreateTokenAndCreatePool(msg.sender, _symbol, token, block.timestamp, p);
 
        tokens[_symbol] = token;
        supplies[token] = _cap;
-//       suppliesAddLiquidity[token] = supplyAdd;
        currencies[token] = _currency;
        amounts[token] = _amount;
-//       amountsAdd[token] = amountAdd;
-       feeRates[token] = feeRate;
+       feeRates[token] = deployFeeRate;
        params[token] = p;
        quotas[token] = _quota;
        starts[token] = _start;
@@ -99,12 +93,13 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
        require(block.timestamp > expires[_token], "not over expiry");
        require(perSales[_token].updateTimestamp > 0, "already added liquidity");
        require(_actualAmountAdd > 0, "invalid actual amount add");
-       uint256 amountAdd = _actualAmountAdd - getFeeRateAmount(_actualAmountAdd, feeRate); //feeRate 5%
+       uint256 amountAdd = _actualAmountAdd - getFeeRateAmount(_actualAmountAdd, deployFeeRate); //feeRate 5%
 
        TokenParams storage p = params[_token];
        p.paymentTokenAmount = amountAdd;
        (p.sqrtPricePaymentTokenFirst, p.sqrtPriceNewTokenFirst) = _calculateSqrtPrices(
            amountAdd, p.newTokenAmount, p.paymentTokenIsToken0);
+       uint256 deployFee = _actualAmountAdd - amountAdd;
 
        if (!_preSaleSuccess) {
            perSales[_token] = PreSale(false, false, block.timestamp);
@@ -112,10 +107,10 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
            return;
        }
        perSales[_token] = PreSale(true, true, block.timestamp);
-       lpTokenIds[_token] = _deployLiquidity(p, swapFeeRate, 200);
 
-       uint256 fee = _actualAmountAdd - amountAdd;
-       currencies[_token].safeTransfer(feeTo, fee);
+       currencies[_token].safeTransferFrom(usdcReceiveAddress, address(this), _actualAmountAdd);
+       lpTokenIds[_token] = _deployLiquidity(p, swapFeeRate, 200);
+       currencies[_token].safeTransfer(deployFeeTo, deployFee);
         emit AddedLiquidity(msg.sender, _token, _preSaleSuccess, block.timestamp);
    }
    event AddedLiquidity(address msgSender, IERC20 indexed token, bool success, uint timestamp);
@@ -163,7 +158,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
        uint refundAmount = amount - fee;
 
 	    IERC20 currency = currencies[token];
-       currency.safeTransfer(feeTo, fee);
+       currency.safeTransfer(deployFeeTo, fee);
        currency.safeTransfer(to, refundAmount);
        emit Refund(token, id, to, fee, refundAmount);
    }

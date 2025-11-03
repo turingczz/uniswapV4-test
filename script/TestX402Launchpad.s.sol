@@ -26,10 +26,8 @@ contract TestX402LaunchpadScript is Script {
         launchpad.setAddLiquidityAdmin(deployer);
         launchpad.setAirdropAdmin(deployer);
         launchpad.setRefundAdmin(deployer);
-        launchpad.setFeeTo(deployer);
+        launchpad.setDeployFeeTo(deployer);
         launchpad.setSwapFeeTo(deployer);
-        launchpad.setFeeRate(1000); // 1% 手续费
-        launchpad.setSwapFeeRate(3000); // 0.3% 交易手续费
         vm.stopBroadcast();
     }
     
