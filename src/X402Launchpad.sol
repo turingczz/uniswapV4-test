@@ -22,20 +22,18 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
    }
    mapping (string => IERC20) public tokens;
    mapping (IERC20 => uint) public supplies;
-    mapping (IERC20 => uint) public suppliesAdd;
    mapping (IERC20 => IERC20) public currencies;
    mapping (IERC20 => uint) public amounts;
-   mapping (IERC20 => uint) public amountsAdd;
    mapping (IERC20 => uint) public quotas;
    mapping (IERC20 => uint) public starts;
    mapping (IERC20 => uint) public expires;
    mapping (IERC20 => uint) public feeRates;
-
    mapping (IERC20 => TokenParams) public params;
+
    mapping (IERC20 => uint) public lpTokenIds;
    mapping (IERC20 => PreSale) public perSales;//后端设置结束，是否预售成功，添加了流动性。
    mapping (IERC20 => mapping (uint => bool)) public airdropped;//id是否空投
-   mapping (IERC20 => mapping (address => uint)) public airdroppedAmount;//用户空投额度
+   mapping (IERC20 => mapping (address => uint)) public airdroppedAmount;//用户空投额度累计值和quota比较
    mapping (IERC20 => mapping (uint => bool)) public refunded;//id是否退款
 
    constructor(
@@ -83,10 +81,10 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
 
        tokens[_symbol] = token;
        supplies[token] = _cap;
-       suppliesAdd[token] = supplyAdd;
+//       suppliesAddLiquidity[token] = supplyAdd;
        currencies[token] = _currency;
        amounts[token] = _amount;
-       amountsAdd[token] = amountAdd;
+//       amountsAdd[token] = amountAdd;
        feeRates[token] = feeRate;
        params[token] = p;
        quotas[token] = _quota;
@@ -101,6 +99,12 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
        require(block.timestamp > expires[_token], "not over expiry");
        require(perSales[_token].updateTimestamp > 0, "already added liquidity");
        require(_actualAmountAdd > 0, "invalid actual amount add");
+       uint256 amountAdd = _actualAmountAdd - getFeeRateAmount(_actualAmountAdd, feeRate); //feeRate 5%
+
+       TokenParams storage p = params[_token];
+       p.paymentTokenAmount = amountAdd;
+       (p.sqrtPricePaymentTokenFirst, p.sqrtPriceNewTokenFirst) = _calculateSqrtPrices(
+           amountAdd, p.newTokenAmount, p.paymentTokenIsToken0);
 
        if (!_preSaleSuccess) {
            perSales[_token] = PreSale(false, false, block.timestamp);
@@ -108,13 +112,9 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
            return;
        }
        perSales[_token] = PreSale(true, true, block.timestamp);
+       lpTokenIds[_token] = _deployLiquidity(p, swapFeeRate, 200);
 
-       uint256 amountAdd = _actualAmountAdd - getFeeRateAmount(_actualAmountAdd, feeRate); //feeRate 5%
        uint256 fee = _actualAmountAdd - amountAdd;
-       amountsAdd[_token] = amountAdd;
-       params[_token].paymentTokenAmount = amountAdd;
-
-       lpTokenIds[_token] = _deployLiquidity(params[_token], swapFeeRate, 200);
        currencies[_token].safeTransfer(feeTo, fee);
         emit AddedLiquidity(msg.sender, _token, _preSaleSuccess, block.timestamp);
    }
@@ -179,9 +179,14 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
        uint amount = currency.balanceOf(address(this));
        uint volume = _token.balanceOf(address(this));
        _collectLpFees(lpTokenId);
-       currency.safeTransfer(swapFeeTo, currency.balanceOf(address(this)) - amount);
-       _token.safeTransfer(swapFeeTo, _token.balanceOf(address(this)) - volume);
+       uint256 currencyFee = currency.balanceOf(address(this)) - amount;
+       uint256 tokenFee = _token.balanceOf(address(this)) - volume;
+
+       currency.safeTransfer(swapFeeTo, currencyFee);
+       _token.safeTransfer(swapFeeTo, tokenFee);
+       emit CollectFees(_token, currencyFee, tokenFee);
    }
+    event CollectFees(IERC20 indexed _token, uint amount, uint volume);
 
    //更新设置开始时间和结束时间
    function setTokenTimes(IERC20 _token, uint _start, uint _expiry) external onlyOwner {
