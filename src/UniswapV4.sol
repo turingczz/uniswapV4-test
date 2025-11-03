@@ -2,21 +2,21 @@
 // Compatible with OpenZeppelin Contracts ^5.4.0
 pragma solidity ^0.8.28;
 
-import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import { Ownable } from "@openzeppelin/contracts/access/Ownable.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
-import {IPositionManager, PoolKey as PositionPoolKey} from "v4-periphery/src/interfaces/IPositionManager.sol";
-import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
-import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
-import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
-import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
-import {LiquidityAmounts} from "v4-periphery/src/libraries/LiquidityAmounts.sol";
-import {Actions} from "v4-periphery/src/libraries/Actions.sol";
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
-import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { IPositionManager, PoolKey as PositionPoolKey } from "v4-periphery/src/interfaces/IPositionManager.sol";
+import { Currency } from "@uniswap/v4-core/src/types/Currency.sol";
+import { PoolKey } from "@uniswap/v4-core/src/types/PoolKey.sol";
+import { IHooks } from "@uniswap/v4-core/src/interfaces/IHooks.sol";
+import { TickMath } from "@uniswap/v4-core/src/libraries/TickMath.sol";
+import { LiquidityAmounts } from "v4-periphery/src/libraries/LiquidityAmounts.sol";
+import { Actions } from "v4-periphery/src/libraries/Actions.sol";
+import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import { IPoolManager } from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import { IAllowanceTransfer } from "permit2/src/interfaces/IAllowanceTransfer.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract UniswapV4 {
     struct TokenParams {
@@ -82,7 +82,14 @@ contract UniswapV4 {
     /// @dev mint a full range LP position, and settle funds in one flow.
     /// @param fee The pool fee in pips (e.g. 3000 = 0.3%)
     /// @param tickSpacing The tick spacing for the pool configuration
-    function _deployLiquidity(TokenParams memory p, uint24 fee, int24 tickSpacing) internal returns(uint256 lpTokenId) {
+    function _deployLiquidity(
+        TokenParams memory p,
+        uint24 fee,
+        int24 tickSpacing
+    )
+        internal
+        returns (uint256 lpTokenId)
+    {
         (address token0, address token1,) = _sortedTokenData(p);
 
         PoolKey memory poolKey = PoolKey({
@@ -100,8 +107,7 @@ contract UniswapV4 {
         IERC20(p.paymentToken).transferFrom(msg.sender, address(this), p.paymentTokenAmount);
         IERC20(p.newToken).transferFrom(msg.sender, address(this), p.newTokenAmount);
 
-        (uint128 amount0Max, uint128 amount1Max, uint128 liquidity) =
-            _calculateMintParams(p, poolKey);
+        (uint128 amount0Max, uint128 amount1Max, uint128 liquidity) = _calculateMintParams(p, poolKey);
 
         (int24 tickLower, int24 tickUpper) = _fullRangeTicks(tickSpacing);
 
@@ -111,11 +117,14 @@ contract UniswapV4 {
         IERC20(p.newToken).approve(address(PERMIT2), p.newTokenAmount);
 
         // Approve PositionManager via Permit2 for both tokens
-        PERMIT2.approve(p.paymentToken, address(POSITION_MANAGER), SafeCast.toUint160(p.paymentTokenAmount), type(uint48).max);
+        PERMIT2.approve(
+            p.paymentToken, address(POSITION_MANAGER), SafeCast.toUint160(p.paymentTokenAmount), type(uint48).max
+        );
         PERMIT2.approve(p.newToken, address(POSITION_MANAGER), SafeCast.toUint160(p.newTokenAmount), type(uint48).max);
 
         bytes[] memory params = new bytes[](2);
-        params[0] = abi.encode(poolKey, tickLower, tickUpper, liquidity, amount0Max, amount1Max, address(this), bytes("")); //todo 池子nft给msg.sender
+        params[0] =
+            abi.encode(poolKey, tickLower, tickUpper, liquidity, amount0Max, amount1Max, address(this), bytes(""));
         params[1] = abi.encode(poolKey.currency0, poolKey.currency1);
 
         uint256 tokenIdBefore = POSITION_MANAGER.nextTokenId();
@@ -141,7 +150,10 @@ contract UniswapV4 {
         POSITION_MANAGER.modifyLiquidities(abi.encode(actions, params), deadline);
     }
 
-    function _calculateMintParams(TokenParams memory p, PoolKey memory poolKey)
+    function _calculateMintParams(
+        TokenParams memory p,
+        PoolKey memory poolKey
+    )
         internal
         pure
         returns (uint128 amount0Max, uint128 amount1Max, uint128 liquidity)
@@ -184,7 +196,11 @@ contract UniswapV4 {
         }
     }
 
-     function _sortedTokenData(TokenParams memory p) internal pure returns (address token0, address token1, uint160 sqrtPriceX96) {
+    function _sortedTokenData(TokenParams memory p)
+        internal
+        pure
+        returns (address token0, address token1, uint160 sqrtPriceX96)
+    {
         if (p.paymentTokenIsToken0) {
             token0 = p.paymentToken;
             token1 = p.newToken;
@@ -196,48 +212,51 @@ contract UniswapV4 {
         }
     }
 
-   function _calculateSqrtPrices(
-       uint paymentTokenAmount,
-       uint newTokenAmount,
-       bool paymentTokenIsToken0
-   ) internal pure returns (uint160 sqrtPricePaymentTokenFirst, uint160 sqrtPriceNewTokenFirst) {
-       if (paymentTokenAmount == 0 || newTokenAmount == 0) revert("Amounts must be positive");
+    function _calculateSqrtPrices(
+        uint256 paymentTokenAmount,
+        uint256 newTokenAmount,
+        bool paymentTokenIsToken0
+    )
+        internal
+        pure
+        returns (uint160 sqrtPricePaymentTokenFirst, uint160 sqrtPriceNewTokenFirst)
+    {
+        if (paymentTokenAmount == 0 || newTokenAmount == 0) revert("Amounts must be positive");
 
         // Calculate the price ratio (Q64.96 format)
         // Price = (token1 quantity * 2^96) / token0 quantity
-       uint256 priceRatio;
-       
-       if (paymentTokenIsToken0) {
-           // paymentToken是token0，newToken是token1
-           // price = (newTokenAmount * 2^96) / paymentTokenAmount
-           priceRatio = (uint256(newTokenAmount) << 96) / paymentTokenAmount;
-           sqrtPricePaymentTokenFirst = uint160(_sqrt(priceRatio));
-           
-           // Reverse price = (paymentTokenAmount * 2^96) / newTokenAmount
-           uint256 reversePriceRatio = (uint256(paymentTokenAmount) << 96) / newTokenAmount;
-           sqrtPriceNewTokenFirst = uint160(_sqrt(reversePriceRatio));
-       } else {
-           // newToken是token0，paymentToken是token1
-           // price = (paymentTokenAmount * 2^96) / newTokenAmount
-           priceRatio = (uint256(paymentTokenAmount) << 96) / newTokenAmount;
-           sqrtPriceNewTokenFirst = uint160(_sqrt(priceRatio));
-           
-           // Reverse price = (newTokenAmount * 2^96) / paymentTokenAmount
-           uint256 reversePriceRatio = (uint256(newTokenAmount) << 96) / paymentTokenAmount;
-           sqrtPricePaymentTokenFirst = uint160(_sqrt(reversePriceRatio));
-       }
-   }
+        uint256 priceRatio;
 
-   function _sqrt(uint256 x) internal pure returns (uint256 y) {
-       if (x == 0) return 0;
-       
-       uint256 z = (x + 1) / 2;
-       y = x;
-       
-       while (z < y) {
-           y = z;
-           z = (x / z + z) / 2;
-       }
-   }
+        if (paymentTokenIsToken0) {
+            // paymentToken是token0，newToken是token1
+            // price = (newTokenAmount * 2^96) / paymentTokenAmount
+            priceRatio = (uint256(newTokenAmount) << 96) / paymentTokenAmount;
+            sqrtPricePaymentTokenFirst = uint160(_sqrt(priceRatio));
 
+            // Reverse price = (paymentTokenAmount * 2^96) / newTokenAmount
+            uint256 reversePriceRatio = (uint256(paymentTokenAmount) << 96) / newTokenAmount;
+            sqrtPriceNewTokenFirst = uint160(_sqrt(reversePriceRatio));
+        } else {
+            // newToken是token0，paymentToken是token1
+            // price = (paymentTokenAmount * 2^96) / newTokenAmount
+            priceRatio = (uint256(paymentTokenAmount) << 96) / newTokenAmount;
+            sqrtPriceNewTokenFirst = uint160(_sqrt(priceRatio));
+
+            // Reverse price = (newTokenAmount * 2^96) / paymentTokenAmount
+            uint256 reversePriceRatio = (uint256(newTokenAmount) << 96) / paymentTokenAmount;
+            sqrtPricePaymentTokenFirst = uint160(_sqrt(reversePriceRatio));
+        }
+    }
+
+    function _sqrt(uint256 x) internal pure returns (uint256 y) {
+        if (x == 0) return 0;
+
+        uint256 z = (x + 1) / 2;
+        y = x;
+
+        while (z < y) {
+            y = z;
+            z = (x / z + z) / 2;
+        }
+    }
 }

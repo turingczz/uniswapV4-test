@@ -2,11 +2,11 @@
 // Compatible with OpenZeppelin Contracts ^5.4.0
 pragma solidity ^0.8.28;
 
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-import {ERC20Capped} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Capped.sol";
-import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
-import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import { ERC20 } from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import { ERC20Burnable } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import { ERC20Capped } from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Capped.sol";
+import { EIP712 } from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
+import { ECDSA } from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 /// @title ERC3009Token
 /// @notice An ERC20 token with EIP-3009 (Transfer With Authorization) functionality
@@ -54,7 +54,11 @@ contract ERC3009Token is ERC20, ERC20Burnable, ERC20Capped, EIP712 {
         string memory symbol,
         uint256 __cap,
         uint8 __decimals
-    ) ERC20(name, symbol) ERC20Capped(__cap) EIP712(name, "1") {
+    )
+        ERC20(name, symbol)
+        ERC20Capped(__cap)
+        EIP712(name, "1")
+    {
         _decimals = __decimals;
         _mint(address(this), __cap);
     }
@@ -99,7 +103,10 @@ contract ERC3009Token is ERC20, ERC20Burnable, ERC20Capped, EIP712 {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external returns (bool) {
+    )
+        external
+        returns (bool)
+    {
         _validateTimeframe(validAfter, validBefore);
         _useAuthorization(from, nonce);
 
@@ -124,15 +131,17 @@ contract ERC3009Token is ERC20, ERC20Burnable, ERC20Capped, EIP712 {
         uint8 v,
         bytes32 r,
         bytes32 s
-    ) external returns (bool) {
+    )
+        external
+        returns (bool)
+    {
         if (to != msg.sender) revert InvalidRecipient(to);
 
         _validateTimeframe(validAfter, validBefore);
         _useAuthorization(from, nonce);
 
-        bytes32 structHash = keccak256(
-            abi.encode(_RECEIVE_WITH_AUTHORIZATION_TYPEHASH, from, to, value, validAfter, validBefore, nonce)
-        );
+        bytes32 structHash =
+            keccak256(abi.encode(_RECEIVE_WITH_AUTHORIZATION_TYPEHASH, from, to, value, validAfter, validBefore, nonce));
         _requireValidSignature(from, structHash, v, r, s);
 
         _transfer(from, to, value);
@@ -172,7 +181,13 @@ contract ERC3009Token is ERC20, ERC20Burnable, ERC20Capped, EIP712 {
         emit AuthorizationUsed(authorizer, nonce);
     }
 
-    function _requireValidSignature(address expectedSigner, bytes32 structHash, uint8 v, bytes32 r, bytes32 s)
+    function _requireValidSignature(
+        address expectedSigner,
+        bytes32 structHash,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    )
         internal
         view
     {
