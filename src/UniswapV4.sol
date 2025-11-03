@@ -3,7 +3,6 @@
 pragma solidity ^0.8.28;
 
 import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
@@ -19,8 +18,7 @@ import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract UniswapV4 is AccessControl {
-
+contract UniswapV4 {
     struct TokenParams {
         address paymentToken;
         address newToken;
@@ -47,30 +45,11 @@ contract UniswapV4 is AccessControl {
     event LiquidityDeployed(uint256 tokenId, uint128 liquidity);
     event FeesCollected(address recipient, uint256 amountToken0, uint256 amountToken1);
 
-    constructor(
-    ){
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-
-        // TokenParams memory p = TokenParams({
-        //     paymentToken: 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238,
-        //     newToken: 0x0A3728E805073E5Aaf6755C872336c50b27114Ed,
-        //     paymentTokenAmount: 100,
-        //     newTokenAmount: 100,
-        //     sqrtPricePaymentTokenFirst: 79228162514264337593543950336,
-        //     sqrtPriceNewTokenFirst: 79228162514264337593543950336,
-        //     paymentTokenIsToken0: 0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238 < 0x0A3728E805073E5Aaf6755C872336c50b27114Ed
-        // });
-    }
+    constructor(){}
 
     /// @dev Initialize the Uniswap v4 pool, mint a full range LP position, and settle funds in one flow.
     /// @param fee The pool fee in pips (e.g. 3000 = 0.3%)
     /// @param tickSpacing The tick spacing for the pool configuration
-    function initAndAdd(TokenParams memory p, uint24 fee, int24 tickSpacing) public onlyRole(DEFAULT_ADMIN_ROLE) returns(uint256 lpTokenId) {
-        _initializePool(p, fee, tickSpacing);
-        return _deployLiquidity(p, fee, tickSpacing);
-    }
-
-    //----------init and deploy liquidity
     function _initializePool(TokenParams memory p, uint24 fee, int24 tickSpacing) internal {
         (address token0, address token1, uint160 sqrtPriceX96) = _sortedTokenData(p);
 
@@ -84,16 +63,17 @@ contract UniswapV4 is AccessControl {
 
         // Initialize pool via PositionManager's initializer interface
         // Note: This requires the PoolManager to be deployed and activated on the network
-        POOL_MANAGER.initialize(poolKey, sqrtPriceX96);
-//        try POOL_MANAGER.initialize(poolKey, sqrtPriceX96) {
-//            // Successfully initialized
-//        } catch {
-//            revert("PoolManager initialization failed - check if Uniswap v4 is deployed on this network");
-//        }
+        try POOL_MANAGER.initialize(poolKey, sqrtPriceX96) {
+            // Successfully initialized
+        } catch {
+            revert("PoolManager initialization failed - check if Uniswap v4 is deployed on this network");
+        }
         emit InitializePool(poolKey);
     }
 
-    //----------deploy liquidity
+    /// @dev mint a full range LP position, and settle funds in one flow.
+    /// @param fee The pool fee in pips (e.g. 3000 = 0.3%)
+    /// @param tickSpacing The tick spacing for the pool configuration
     function _deployLiquidity(TokenParams memory p, uint24 fee, int24 tickSpacing) internal returns(uint256 lpTokenId) {
         (address token0, address token1,) = _sortedTokenData(p);
 
@@ -137,9 +117,8 @@ contract UniswapV4 is AccessControl {
         emit LiquidityDeployed(lpTokenId, liquidity);
     }
 
-
     /// @notice Collect outstanding fees from the protocol-owned LP position to the owner
-    function collectLpFees(uint256 lpTokenId) internal {
+    function _collectLpFees(uint256 lpTokenId) internal {
         require(lpTokenId != 0, "LP_NOT_INITIALIZED");
 
         (PositionPoolKey memory poolKey,) = POSITION_MANAGER.getPoolAndPositionInfo(lpTokenId);
@@ -152,13 +131,6 @@ contract UniswapV4 is AccessControl {
 
         uint256 deadline = block.timestamp + 1 hours;
         POSITION_MANAGER.modifyLiquidities(abi.encode(actions, params), deadline);
-    }
-
-    /// @notice Withdraw any ERC20 token from the contract to the admin
-    /// @param token The address of the ERC20 token to withdraw
-    /// @param amount The amount of tokens to withdraw
-    function withdrawToken(address token, uint256 amount) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        IERC20(token).transfer(msg.sender, amount);
     }
 
     function _calculateMintParams(TokenParams memory p, PoolKey memory poolKey)
@@ -216,7 +188,7 @@ contract UniswapV4 is AccessControl {
         }
     }
 
-       /// @notice 根据两个token的数量计算sqrt价格
+   /// @notice 根据两个token的数量计算sqrt价格
    /// @param paymentTokenAmount 支付代币数量
    /// @param newTokenAmount 新代币数量
    /// @param paymentTokenIsToken0 支付代币是否为token0
@@ -253,7 +225,7 @@ contract UniswapV4 is AccessControl {
            sqrtPricePaymentTokenFirst = uint160(_sqrt(reversePriceRatio));
        }
    }
-   
+
    /// @notice 计算平方根 (Babylonian method)
    /// @param x 输入值
    /// @return y 平方根结果

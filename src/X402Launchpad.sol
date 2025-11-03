@@ -22,10 +22,10 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
    }
    mapping (string => IERC20) public tokens;
    mapping (IERC20 => uint) public supplies;
-    mapping (IERC20 => uint) public suppliesAdded;
+    mapping (IERC20 => uint) public suppliesAdd;
    mapping (IERC20 => IERC20) public currencies;
    mapping (IERC20 => uint) public amounts;
-   mapping (IERC20 => uint) public amountsAdded;
+   mapping (IERC20 => uint) public amountsAdd;
    mapping (IERC20 => uint) public quotas;
    mapping (IERC20 => uint) public starts;
    mapping (IERC20 => uint) public expires;
@@ -55,36 +55,37 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
 
    //创建token，创建交易池
    function createTokenAndCreatePool(string memory _name, string memory _symbol, uint8 _decimals, uint _cap, IERC20 _currency, uint _amount, uint _quota, uint _start, uint _expiry) external payable nonReentrant whenNotPaused {
-       require(msg.sender == tokenAdmin, "token admin only");
+       require(msg.sender == createTokenAdmin, "token admin only");
        require(_start < _expiry && block.timestamp < _expiry, "too early expiry");
        require(_cap > 0 && _amount > 0 && _quota > 0, "Invalid cap, amount or quota");
        require(tokens[_symbol] == IERC20(address(0)), "Token exists!"); //检查平台是否存在该token
 
-       uint256 amountAdded = _amount - getFeeRateAmount(_amount, feeRate);
-       uint256 supplyAdded = _cap * tokenAddRate / SCALE_FACTOR; //80%
-
        IERC20 token = IERC20(new ERC3009Token(_name, _symbol, _decimals, uint8(_cap)));
        bool paymentTokenIsToken0 = paymentToken < address(token);
+       uint256 preAmountAdd = _amount * tokenAddRate / SCALE_FACTOR; //20%
+       uint256 amountAdd = preAmountAdd - getFeeRateAmount(preAmountAdd, feeRate); //feeRate 5%
+       uint256 supplyAdd = _cap * tokenAddRate / SCALE_FACTOR; //20%
+
        TokenParams memory p = TokenParams({
             paymentToken: paymentToken,
             newToken: address(token),
-            paymentTokenAmount: amountAdded,
-            newTokenAmount: supplyAdded,
+            paymentTokenAmount: amountAdd,
+            newTokenAmount: supplyAdd,
             paymentTokenIsToken0: paymentTokenIsToken0,
             sqrtPricePaymentTokenFirst: 0,
             sqrtPriceNewTokenFirst: 0
         });
          (p.sqrtPricePaymentTokenFirst, p.sqrtPriceNewTokenFirst) = _calculateSqrtPrices(
-             amountAdded, supplyAdded, paymentTokenIsToken0);
+             amountAdd, supplyAdd, paymentTokenIsToken0);
         _initializePool(p, uint24(feeRate), 200);
        emit CreateTokenAndCreatePool(msg.sender, _symbol, token, block.timestamp, p);
 
        tokens[_symbol] = token;
        supplies[token] = _cap;
-       suppliesAdded[token] = supplyAdded;
+       suppliesAdd[token] = supplyAdd;
        currencies[token] = _currency;
        amounts[token] = _amount;
-       amountsAdded[token] = amountAdded;
+       amountsAdd[token] = amountAdd;
        feeRates[token] = feeRate;
        params[token] = p;
        quotas[token] = _quota;
@@ -94,10 +95,11 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
    event CreateTokenAndCreatePool(address msgSender, string _symbol, IERC20 indexed token, uint timestamp, TokenParams p);
 
    //Completed
-   function addLiquidity(IERC20 _token, bool _preSaleSuccess) external payable nonReentrant whenNotPaused {
-       require(msg.sender == tokenAdmin, "create token admin only");
+   function addLiquidity(IERC20 _token, bool _preSaleSuccess, uint256 _actualAmountAdd) external payable nonReentrant whenNotPaused {
+       require(msg.sender == addLiquidityAdmin, "add liquidity admin only");
        require(block.timestamp > expires[_token], "not over expiry");
        require(perSales[_token].updateTimestamp > 0, "already added liquidity");
+       require(_actualAmountAdd > 0, "invalid actual amount add");
 
        if (!_preSaleSuccess) {
            perSales[_token] = PreSale(false, false, block.timestamp);
@@ -106,8 +108,13 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
        }
        perSales[_token] = PreSale(true, true, block.timestamp);
 
-       lpTokenIds[_token] = _deployLiquidity(params[_token], 211, 200);
-       currencies[_token].safeTransfer(feeTo, amounts[_token] - amountsAdded[_token]);
+       uint256 amountAdd = _actualAmountAdd - getFeeRateAmount(_actualAmountAdd, feeRate); //feeRate 5%
+       uint256 fee = _actualAmountAdd - amountAdd;
+       amountsAdd[_token] = amountAdd;
+       params[_token].paymentTokenAmount = amountAdd;
+
+       lpTokenIds[_token] = _deployLiquidity(params[_token], swapFeeRate, 200);
+       currencies[_token].safeTransfer(feeTo, fee);
         emit AddedLiquidity(msg.sender, _token, _preSaleSuccess, block.timestamp);
    }
    event AddedLiquidity(address msgSender, IERC20 indexed token, bool success, uint timestamp);
@@ -164,20 +171,15 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
    //手动操作，收集手续费用
    function collectFees(IERC20 _token) external nonReentrant {
        require(address(_token) != address(0), "invalid token");
-       require(amounts[_token] > 0, "not exist token");
        uint lpTokenId = lpTokenIds[_token];
-        
-       collectLpFees(lpTokenId);
+       require(lpTokenId != 0, "not exist token");
 
-    //     //feeTo 是合约地址，需要手动提取
-    //    IERC20 swapFeeCurrency;
-    //    uint amountBefore = swapFeeCurrency.balanceOf(address(this));
-       
-    //    collectLpFees(lpTokenId); //todo 测试一下fee提取到哪里了，怎么正确配置一下；如果知道哪个用户调用；直接nft转给这个地址比较合适
-    //     //是否提取到本合约中了，如果是从合约中提取
-
-    //     uint amountAfter = swapFeeCurrency.balanceOf(address(this));
-    //    swapFeeCurrency.safeTransfer(swapFeeTo, amountAfter - amountBefore);
+       IERC20 currency = currencies[_token];
+       uint amount = currency.balanceOf(address(this));
+       uint volume = _token.balanceOf(address(this));
+       _collectLpFees(lpTokenId);
+       currency.safeTransfer(swapFeeTo, currency.balanceOf(address(this)) - amount);
+       _token.safeTransfer(swapFeeTo, _token.balanceOf(address(this)) - volume);
    }
 
    //更新设置开始时间和结束时间
@@ -199,17 +201,4 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
    function getFeeRateAmount(uint _amount, uint _feeRate) public pure returns(uint) {
        return _amount * _feeRate / 1e18;
    }
-   
-    // Override functions to resolve diamond inheritance conflict
-    function _msgSender() internal view virtual override(Context, ContextUpgradeable) returns (address) {
-        return ContextUpgradeable._msgSender();
-    }
-
-    function _msgData() internal view virtual override(Context, ContextUpgradeable) returns (bytes calldata) {
-        return ContextUpgradeable._msgData();
-    }
-
-    function _contextSuffixLength() internal view virtual override(Context, ContextUpgradeable) returns (uint256) {
-        return ContextUpgradeable._contextSuffixLength();
-    }
 }

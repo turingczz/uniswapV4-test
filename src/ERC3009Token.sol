@@ -5,7 +5,6 @@ pragma solidity ^0.8.28;
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import {ERC20Capped} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Capped.sol";
-//import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {EIP712} from "@openzeppelin/contracts/utils/cryptography/EIP712.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
@@ -40,9 +39,6 @@ contract ERC3009Token is ERC20, ERC20Burnable, ERC20Capped, EIP712 {
     // 0 = Unused, 1 = Used, 2 = Canceled
     mapping(address => mapping(bytes32 => uint8)) private _authorizationStates;
 
-    // --- Role definitions ---
-    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
-
     // Decimals
     uint8 private immutable _decimals;
 
@@ -58,18 +54,9 @@ contract ERC3009Token is ERC20, ERC20Burnable, ERC20Capped, EIP712 {
         string memory symbol,
         uint256 __cap,
         uint8 __decimals
-        // uint256 initialSupply
-        // address admin
     ) ERC20(name, symbol) ERC20Capped(__cap) EIP712(name, "1") {
         _decimals = __decimals;
         _mint(address(this), __cap);
-
-        // _grantRole(MINTER_ROLE, admin);
-        // 
-        // if (initialSupply > 0) {
-        //     require(initialSupply <= __cap, "ERC20Capped: cap exceeded");
-        //     _mint(admin, initialSupply);
-        // }
     }
 
     // -------------------------
@@ -80,13 +67,6 @@ contract ERC3009Token is ERC20, ERC20Burnable, ERC20Capped, EIP712 {
     function DOMAIN_SEPARATOR() external view returns (bytes32) {
         return _domainSeparatorV4();
     }
-
-    // /// @notice Mint new tokens
-    // /// @param to The address to mint tokens to
-    // /// @param amount The amount of tokens to mint
-    // function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) {
-    //     _mint(to, amount);
-    // }
 
     /// @notice Override _update to handle capped token transfers
     /// @param from The sender address

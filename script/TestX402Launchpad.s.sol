@@ -22,7 +22,8 @@ contract TestX402LaunchpadScript is Script {
         // 由于合约部署时部署者自动成为所有者，我们可以直接设置管理员配置
         
         // 设置合约配置
-        launchpad.setTokenAdmin(deployer);
+        launchpad.setCreateTokenAdmin(deployer);
+        launchpad.setAddLiquidityAdmin(deployer);
         launchpad.setAirdropAdmin(deployer);
         launchpad.setRefundAdmin(deployer);
         launchpad.setFeeTo(deployer);
@@ -102,9 +103,7 @@ contract TestX402LaunchpadScript is Script {
         bool preSaleSuccess = true;
         
         // 调用addLiquidity
-        launchpad.addLiquidity{
-            value: 0.5 ether
-        }(token, preSaleSuccess);
+        launchpad.addLiquidity(token, preSaleSuccess, 0.5 ether);
         
         console.log("Liquidity added successfully");
         console.log("Pre-sale status:", preSaleSuccess);

@@ -22,15 +22,16 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
    address public pauseAdmin;
    bool public paused;
 
-   address public tokenAdmin;
+   address public createTokenAdmin;
+   address public addLiquidityAdmin;
    address public airdropAdmin;
    address public refundAdmin;
     address public paymentToken;//default usdc
    address public feeTo;
    address public swapFeeTo;
    uint256 public feeRate; //default 50000 5%
-   uint256 public swapFeeRate; //default 10000 1%
-    uint256 public tokenAddRate;//default 800000 80%
+   uint24 public swapFeeRate; //default 3000 0.3% 标准交易对（最常用）
+    uint256 public tokenAddRate;//default 800000 20%
 
    modifier nonReentrant() {
        if (_nonReentrantStatus != 0) revert ReentrancyGuardStatus();
@@ -67,21 +68,24 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
     * @dev Initializes contract configuration after deployment
     * Sets up all essential contract addresses and parameters
     * Can only be called by contract owner
-    * @param _tokenAdmin Address of the token admin
+    * @param _createTokenAdmin Address of the token admin
+    * @param _addLiquidityAdmin Address of the add liquidity admin
     * @param _airdropAdmin Address of the airdrop admin
     * @param _refundAdmin Address of the refund admin
     * @param _feeTo Address of the fee recipient
     * @param _swapFeeTo Address of the swap fee recipient
     */
-   function initConfig(address _tokenAdmin, address _airdropAdmin, address _refundAdmin, address _paymentToken, address _feeTo, address _swapFeeTo) external onlyOwner {
-       if (_tokenAdmin == address(0)) revert ZeroAddress("token admin");
+   function initConfig(address _createTokenAdmin, address _addLiquidityAdmin, address _airdropAdmin, address _refundAdmin, address _paymentToken, address _feeTo, address _swapFeeTo) external onlyOwner {
+       if (_createTokenAdmin == address(0)) revert ZeroAddress("token admin");
+       if (_addLiquidityAdmin == address(0)) revert ZeroAddress("add liquidity admin");
        if (_airdropAdmin == address(0)) revert ZeroAddress("airdrop admin");
        if (_refundAdmin == address(0)) revert ZeroAddress("refund admin");
        if (_paymentToken == address(0)) revert ZeroAddress("payment token");
        if (_feeTo == address(0)) revert ZeroAddress("fee to");
        if (_swapFeeTo == address(0)) revert ZeroAddress("swap fee to");
 
-       tokenAdmin = _tokenAdmin;
+       createTokenAdmin = _createTokenAdmin;
+       addLiquidityAdmin = _addLiquidityAdmin;
        airdropAdmin = _airdropAdmin;
        refundAdmin = _refundAdmin;
        paymentToken = _paymentToken;
@@ -91,7 +95,7 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
        swapFeeRate = 10000; //default 1%
        tokenAddRate = 800000; //default 80%
 
-       emit InitConfig(msg.sender, _tokenAdmin, _airdropAdmin, _refundAdmin, _paymentToken, _feeTo, _swapFeeTo);
+       emit InitConfig(msg.sender, _createTokenAdmin, _addLiquidityAdmin, _airdropAdmin, _refundAdmin, _paymentToken, _feeTo, _swapFeeTo);
    }
 
    /**
@@ -99,11 +103,23 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
     * Token admin can create tokens and pools
     * @param _account Address of the token admin
     */
-   function setTokenAdmin(address _account) public onlyOwner {
-       if (_account == address(0)) revert ZeroAddress("set tokenAdmin");
-       address oldTokenAdmin = tokenAdmin;
-       tokenAdmin = _account;
-       emit TokenAdminChanged(msg.sender, oldTokenAdmin, tokenAdmin);
+   function setCreateTokenAdmin(address _account) public onlyOwner {
+       if (_account == address(0)) revert ZeroAddress("set createTokenAdmin");
+       address oldCreateTokenAdmin = createTokenAdmin;
+       createTokenAdmin = _account;
+       emit CreateTokenAdminChanged(msg.sender, oldCreateTokenAdmin, createTokenAdmin);
+   }
+
+   /**
+    * @dev Sets the add liquidity admin address
+    * Add liquidity admin can add liquidity to pools
+    * @param _account Address of the add liquidity admin
+    */
+   function setAddLiquidityAdmin(address _account) public onlyOwner {
+       if (_account == address(0)) revert ZeroAddress("set addLiquidityAdmin");
+       address oldAddLiquidityAdmin = addLiquidityAdmin;
+       addLiquidityAdmin = _account;
+       emit AddLiquidityAdminChanged(msg.sender, oldAddLiquidityAdmin, addLiquidityAdmin);
    }
 
    /**
@@ -128,6 +144,18 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
        address oldRefundAdmin = refundAdmin;
        refundAdmin = _account;
        emit RefundAdminChanged(msg.sender, oldRefundAdmin, refundAdmin);
+   }
+
+    /**
+    * @dev Sets the payment token address
+    * Payment token is used for swaps and airdrops
+    * @param _account Address of the payment token
+    */
+   function setPaymentToken(address _account) public onlyOwner {
+       if (_account == address(0)) revert ZeroAddress("set paymentToken");
+       address oldPaymentToken = paymentToken;
+       paymentToken = _account;
+       emit PaymentTokenChanged(msg.sender, oldPaymentToken, paymentToken);
    }
 
    /**
@@ -170,10 +198,21 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
     * Swap fee rate is expressed in basis points (1e18 = 100%)
     * @param _rate Swap fee rate in basis points
     */
-   function setSwapFeeRate(uint256 _rate) public onlyOwner {
-       uint256 oldSwapFeeRate = swapFeeRate;
+   function setSwapFeeRate(uint24 _rate) public onlyOwner {
+       uint24 oldSwapFeeRate = swapFeeRate;
        swapFeeRate = _rate;
        emit SwapFeeRateChanged(msg.sender, oldSwapFeeRate, swapFeeRate);
+   }
+
+   /**
+    * @dev Sets the token add rate
+    * Token add rate is expressed in basis points (1e18 = 100%)
+    * @param _rate Token add rate in basis points
+    */
+   function setTokenAddRate(uint256 _rate) public onlyOwner {
+       uint256 oldTokenAddRate = tokenAddRate;
+       tokenAddRate = _rate;
+       emit TokenAddRateChanged(msg.sender, oldTokenAddRate, tokenAddRate);
    }
 
    // Pause ...
@@ -255,12 +294,15 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
 //   event MigrateCallerChanged(address adminSetter, address oldCaller, address newCaller);
 
    // Admin events
-   event TokenAdminChanged(address adminSetter, address oldTokenAdmin, address newTokenAdmin);
+   event CreateTokenAdminChanged(address adminSetter, address oldCreateTokenAdmin, address newCreateTokenAdmin);
+   event AddLiquidityAdminChanged(address adminSetter, address oldAddLiquidityAdmin, address newAddLiquidityAdmin);
    event AirdropAdminChanged(address adminSetter, address oldAirdropAdmin, address newAirdropAdmin);
    event RefundAdminChanged(address adminSetter, address oldRefundAdmin, address newRefundAdmin);
+   event PaymentTokenChanged(address adminSetter, address oldPaymentToken, address newPaymentToken);
    event FeeToChanged(address adminSetter, address oldFeeTo, address newFeeTo);
    event SwapFeeToChanged(address adminSetter, address oldSwapFeeTo, address newSwapFeeTo);
    event FeeRateChanged(address adminSetter, uint256 oldFeeRate, uint256 newFeeRate);
-   event SwapFeeRateChanged(address adminSetter, uint256 oldSwapFeeRate, uint256 newSwapFeeRate);
-    event InitConfig(address adminSetter, address tokenAdmin, address airdropAdmin, address refundAdmin, address paymentToken, address feeTo, address swapFeeTo);
+   event SwapFeeRateChanged(address adminSetter, uint24 oldSwapFeeRate, uint24 newSwapFeeRate);
+   event TokenAddRateChanged(address adminSetter, uint256 oldTokenAddRate, uint256 newTokenAddRate);
+    event InitConfig(address adminSetter, address createTokenAdmin, address addLiquidityAdmin, address airdropAdmin, address refundAdmin, address paymentToken, address feeTo, address swapFeeTo);
 }
