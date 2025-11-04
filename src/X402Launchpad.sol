@@ -68,7 +68,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         IERC20 token = IERC20(new ERC3009Token(_name, _symbol, _cap, _decimals));
         bool fundingTokenIsToken0 = address(_fundingToken) < address(token);
         uint256 tokenAddLiquidity = _cap * tokenAddLiquidityRate / SCALE_FACTOR; //20%
-        uint256 fundingTokenAddLiquidity = _fundingAmount - getFeeRateAmount(_fundingAmount, FeeRate); //预售金额扣除feeRate 5%
+        uint256 fundingTokenAddLiquidity = _fundingAmount; //x402已经支付了fee 5%
 
         TokenParams memory p = TokenParams({
             fundingToken: address(_fundingToken),
@@ -107,12 +107,10 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         require(tokenStatus[_token] == TokenStatus.PreSale, "can not add liquidity");
 
         TokenParams storage p = params[_token];
-        uint256 fee = fundingAmounts[_token] - p.fundingTokenAmount;
         tokenStatus[_token] = TokenStatus.AddedLiquidity;
 
-        fundingTokens[_token].safeTransferFrom(usdcReceiveAddress, address(this), p.fundingTokenAmount);
+        fundingTokens[_token].safeTransferFrom(fundingCollectAddress, address(this), p.fundingTokenAmount);
         lpTokenIds[_token] = _deployLiquidity(p, swapFeeRate, 200);
-        fundingTokens[_token].safeTransfer(feeTo, fee);
         emit AddedLiquidity(msg.sender, _token, block.timestamp);
     }
     event AddedLiquidity(address msgSender, IERC20 indexed token, uint256 timestamp);
@@ -171,18 +169,14 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         require(refunded[token][to] == false, "airdropped already");
         refunded[token][to] = true;
 
-        uint256 fee = getFeeRateAmount(amount, FeeRate);
-        uint256 refundAmount = amount - fee;
-
         IERC20 fundingToken = fundingTokens[token];
-        fundingToken.safeTransfer(feeTo, fee);
-        fundingToken.safeTransfer(to, refundAmount);
-        emit Refund(token, to, fee, refundAmount);
+        fundingToken.safeTransfer(to, amount);
+        emit Refund(token, to, amount);
     }
-    event Refund(IERC20 indexed token, address indexed to, uint256 fee, uint256 refundAmount);
+    event Refund(IERC20 indexed token, address indexed to, uint256 amount);
 
     //手动操作，收集手续费用
-    function collectFees(IERC20 _token) external nonReentrant {
+    function collectSwapFees(IERC20 _token) external nonReentrant {
         require(address(_token) != address(0), "invalid token");
         uint256 lpTokenId = lpTokenIds[_token];
         require(lpTokenId != 0, "not exist token");
@@ -190,18 +184,13 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         IERC20 fundingToken = fundingTokens[_token];
         uint256 fundingAmount = fundingToken.balanceOf(address(this));
         uint256 tokenAmount = _token.balanceOf(address(this));
-        _collectLpFees(lpTokenId);
+        _collectLpSwapFees(lpTokenId);
         uint256 fundingSwapFee = fundingToken.balanceOf(address(this)) - fundingAmount;
         uint256 tokenSwapFee = _token.balanceOf(address(this)) - tokenAmount;
 
         fundingToken.safeTransfer(swapFeeTo, fundingSwapFee);
         _token.safeTransfer(swapFeeTo, tokenSwapFee);
-        emit CollectFees(_token, fundingSwapFee, tokenSwapFee);
+        emit CollectSwapFees(_token, fundingSwapFee, tokenSwapFee);
     }
-
-    event CollectFees(IERC20 indexed _token, uint256 fundingSwapFee, uint256 tokenSwapFee);
-
-    function getFeeRateAmount(uint256 _amount, uint256 _feeRate) public pure returns (uint256) {
-        return _amount * _feeRate / 1e18;
-    }
+    event CollectSwapFees(IERC20 indexed _token, uint256 fundingSwapFee, uint256 tokenSwapFee);
 }

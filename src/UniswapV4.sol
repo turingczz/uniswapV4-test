@@ -45,7 +45,6 @@ contract UniswapV4 {
     // event
     event InitializePool(PoolKey poolKey);
     event LiquidityDeployed(uint256 tokenId, uint128 liquidity);
-    event FeesCollected(address recipient, uint256 amountToken0, uint256 amountToken1);
 
     constructor(address _poolManger, address _positionManger, address _permit2) {
         if (_poolManger == address(0)) revert("UniswapV4: pool manager is zero address");
@@ -58,15 +57,15 @@ contract UniswapV4 {
     }
 
     /// @dev Initialize the Uniswap v4 pool, mint a full range LP position, and settle funds in one flow.
-    /// @param fee The pool fee in pips (e.g. 3000 = 0.3%)
+    /// @param swapFee The pool swapFee in pips (e.g. 3000 = 0.3%)
     /// @param tickSpacing The tick spacing for the pool configuration
-    function _initializePool(TokenParams memory p, uint24 fee, int24 tickSpacing) internal {
+    function _initializePool(TokenParams memory p, uint24 swapFee, int24 tickSpacing) internal {
         (address token0, address token1, uint160 sqrtPriceX96) = _sortedTokenData(p);
 
         PoolKey memory poolKey = PoolKey({
             currency0: Currency.wrap(token0),
             currency1: Currency.wrap(token1),
-            fee: fee,
+            fee: swapFee,
             tickSpacing: tickSpacing,
             hooks: IHooks(address(0))
         });
@@ -82,11 +81,11 @@ contract UniswapV4 {
     }
 
     /// @dev mint a full range LP position, and settle funds in one flow.
-    /// @param fee The pool fee in pips (e.g. 3000 = 0.3%)
+    /// @param swapFee The pool swapFee in pips (e.g. 3000 = 0.3%)
     /// @param tickSpacing The tick spacing for the pool configuration
     function _deployLiquidity(
         TokenParams memory p,
-        uint24 fee,
+        uint24 swapFee,
         int24 tickSpacing
     )
         internal
@@ -97,7 +96,7 @@ contract UniswapV4 {
         PoolKey memory poolKey = PoolKey({
             currency0: Currency.wrap(token0),
             currency1: Currency.wrap(token1),
-            fee: fee,
+            fee: swapFee,
             tickSpacing: tickSpacing,
             hooks: IHooks(address(0))
         });
@@ -136,8 +135,8 @@ contract UniswapV4 {
         emit LiquidityDeployed(lpTokenId, liquidity);
     }
 
-    /// @notice Collect outstanding fees from the protocol-owned LP position to the owner
-    function _collectLpFees(uint256 lpTokenId) internal {
+    /// @notice Collect outstanding swap fees from the protocol-owned LP position to the owner
+    function _collectLpSwapFees(uint256 lpTokenId) internal {
         if (lpTokenId == 0) revert("LP_NOT_INITIALIZED");
 
         (PositionPoolKey memory poolKey,) = POSITION_MANAGER.getPoolAndPositionInfo(lpTokenId);

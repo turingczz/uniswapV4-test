@@ -22,10 +22,8 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
     address public addLiquidityAdmin;
     address public airdropAdmin;
     address public refundAdmin;
-    address public usdcReceiveAddress;
-    address public feeTo;
+    address public fundingCollectAddress;
     address public swapFeeTo;
-    uint256 public FeeRate; //default 50000 5%
     uint24 public swapFeeRate; //default 3000 0.3% 标准交易对（最常用）
     uint256 public tokenAddLiquidityRate; //default 200000 20%
 
@@ -70,7 +68,6 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
      * @param _addLiquidityAdmin Address of the add liquidity admin
      * @param _airdropAdmin Address of the airdrop admin
      * @param _refundAdmin Address of the refund admin
-     * @param _feeTo Address of the fee recipient
      * @param _swapFeeTo Address of the swap fee recipient
      */
     function initConfig(
@@ -78,8 +75,7 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
         address _addLiquidityAdmin,
         address _airdropAdmin,
         address _refundAdmin,
-        address _usdcReceiveAddress,
-        address _feeTo,
+        address _fundingCollectAddress,
         address _swapFeeTo
     )
         external
@@ -89,19 +85,16 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
         if (_addLiquidityAdmin == address(0)) revert ZeroAddress("add liquidity admin");
         if (_airdropAdmin == address(0)) revert ZeroAddress("airdrop admin");
         if (_refundAdmin == address(0)) revert ZeroAddress("refund admin");
-        if (_usdcReceiveAddress == address(0)) revert ZeroAddress("usdc receive address");
-        if (_feeTo == address(0)) revert ZeroAddress("fee to");
+        if (_fundingCollectAddress == address(0)) revert ZeroAddress("funding collect address");
         if (_swapFeeTo == address(0)) revert ZeroAddress("swap fee to");
 
         createTokenAdmin = _createTokenAdmin;
         addLiquidityAdmin = _addLiquidityAdmin;
         airdropAdmin = _airdropAdmin;
         refundAdmin = _refundAdmin;
-        usdcReceiveAddress = _usdcReceiveAddress;
-        feeTo = _feeTo;
+        fundingCollectAddress = _fundingCollectAddress;
         swapFeeTo = _swapFeeTo;
-        FeeRate = 50_000; //default 5%
-        swapFeeRate = 10_000; //default 1%
+        swapFeeRate = 3000; //default 0.3%
         tokenAddLiquidityRate = 200_000; //default 20%
 
         emit InitConfig(
@@ -110,8 +103,7 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
             _addLiquidityAdmin,
             _airdropAdmin,
             _refundAdmin,
-            _usdcReceiveAddress,
-            _feeTo,
+            _fundingCollectAddress,
             _swapFeeTo
         );
     }
@@ -171,21 +163,9 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
      */
     function setUsdcReceiveAddress(address _account) public onlyOwner {
         if (_account == address(0)) revert ZeroAddress("set usdcReceiveAddress");
-        address oldUsdcReceiveAddress = usdcReceiveAddress;
-        usdcReceiveAddress = _account;
-        emit UsdcReceiveAddressChanged(msg.sender, oldUsdcReceiveAddress, usdcReceiveAddress);
-    }
-
-    /**
-     * @dev Sets the fee recipient address
-     * Fee recipient receives protocol fees
-     * @param _account Address of the fee recipient
-     */
-    function setFeeTo(address _account) public onlyOwner {
-        if (_account == address(0)) revert ZeroAddress("set feeTo");
-        address oldFeeTo = feeTo;
-        feeTo = _account;
-        emit FeeToChanged(msg.sender, oldFeeTo, feeTo);
+        address oldUsdcReceiveAddress = fundingCollectAddress;
+        fundingCollectAddress = _account;
+        emit UsdcReceiveAddressChanged(msg.sender, oldUsdcReceiveAddress, fundingCollectAddress);
     }
 
     /**
@@ -198,17 +178,6 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
         address oldSwapFeeTo = swapFeeTo;
         swapFeeTo = _account;
         emit SwapFeeToChanged(msg.sender, oldSwapFeeTo, swapFeeTo);
-    }
-
-    /**
-     * @dev Sets the protocol fee rate
-     * Fee rate is expressed in basis points (1e18 = 100%)
-     * @param _rate Fee rate in basis points
-     */
-    function setFeeRate(uint256 _rate) public onlyOwner {
-        uint256 oldFeeRate = FeeRate;
-        FeeRate = _rate;
-        emit FeeRateChanged(msg.sender, oldFeeRate, FeeRate);
     }
 
     /**
@@ -319,8 +288,7 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
         address addLiquidityAdmin,
         address airdropAdmin,
         address refundAdmin,
-        address paymentToken,
-        address feeTo,
+        address fundingCollectAddress,
         address swapFeeTo
     );
 }

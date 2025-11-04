@@ -26,7 +26,6 @@ contract TestX402LaunchpadScript is Script {
         launchpad.setAddLiquidityAdmin(deployer);
         launchpad.setAirdropAdmin(deployer);
         launchpad.setRefundAdmin(deployer);
-        launchpad.setFeeTo(deployer);
         launchpad.setSwapFeeTo(deployer);
         vm.stopBroadcast();
     }
@@ -122,7 +121,7 @@ contract TestX402LaunchpadScript is Script {
 //        uint256 initialBalance = deployer.balance;
         
         // 调用collectFees
-        launchpad.collectFees(token);
+        launchpad.collectSwapFees(token);
         
         // // 检查手续费是否收集成功
         // uint256 finalBalance = deployer.balance;

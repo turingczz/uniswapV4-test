@@ -31,6 +31,6 @@ contract UseV4 is UniswapV4 {
    }
 
    function collectFees(uint256 lpTokenId) external {
-       _collectLpFees(lpTokenId);
+       _collectLpSwapFees(lpTokenId);
    }
 }
