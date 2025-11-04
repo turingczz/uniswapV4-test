@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {stdError} from "forge-std/StdError.sol";
 
 /**
  * @title Common
@@ -231,34 +232,15 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
     // Error definitions
     error ZeroAddress(string msg);
     error ZeroValue(string msg);
-    error DirectTransferRejected(uint32 period, address caller);
-    error OverStakeCap();
-    error InvalidSpecialCaller();
-    error InvalidEndTime(string msg);
-    error StakePaused();
-    error InvalidAmount();
-    error AlreadyWithdrawRewards(address staker);
+    error NotAdmin(string msg);
+    error AlreadyTokenExists(string symbol);
+    error AlreadyAirdropped(address account);
+    error AlreadyRefunded(address account);
+    error InvalidTokenStatus(IERC20 token);
+    error InvalidArrayLength();
     error IllegalPausePermissions(address sender);
     error AlreadyPaused();
     error ReentrancyGuardStatus();
-    error InvalidMigratePeriod();
-    error CanNotMigrate(uint32 period);
-    error InvalidMigrateCaller();
-    error NotFoundStakingItem(uint32 id);
-    error InvalidMigrateId(uint32 id);
-    error ExistStakingItem(uint32 id);
-    error NotDueYetItem(uint32 id);
-    error NotExistNextItem(uint32 id);
-    error AlreadyUnstakedItem(uint32 id);
-    error AlreadyWithdrawn(uint32 id);
-    error UnsetPeriodApr(uint32 period);
-    error InsufficientRewardsAmount(uint32 id);
-    error InsufficientAmount(uint32 id);
-    error InvalidArrayLength();
-    error InvalidPeriod(uint32 period);
-    error PeriodNotStake(uint32 period);
-    error PeriodNotStart(uint32 period);
-    error PeriodExpired(uint32 period);
 
     // Event definitions
     event PauseAdminChanged(address adminSetter, address oldAddress, address newAddress);

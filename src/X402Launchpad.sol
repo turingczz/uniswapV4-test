@@ -66,9 +66,9 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         nonReentrant
         whenNotPaused
     {
-        require(msg.sender == createTokenAdmin, "token admin only");
-        require(_cap > 0 && _fundingAmount > 0, "Invalid cap, amount");
-        require(tokens[_symbol] == IERC20(address(0)), "Token exists!");
+        if(msg.sender != createTokenAdmin) revert NotAdmin("token admin");
+        if(_cap <= 0 || _fundingAmount <= 0) revert ZeroValue("Invalid cap, fundingAmount");
+        if(tokens[_symbol] != IERC20(address(0))) revert AlreadyTokenExists(_symbol);
 
         IERC20 token = IERC20(new ERC3009Token(_name, _symbol, _cap, _decimals));
         uint256 tokenAddLiquidity = _cap * tokenAddLiquidityRate / SCALE_FACTOR; //20%
@@ -97,8 +97,8 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
     }
 
     function addLiquidity(IERC20 _token) external payable nonReentrant whenNotPaused {
-        require(msg.sender == addLiquidityAdmin, "add liquidity admin only");
-        require(tokenStatus[_token] == TokenStatus.PreSale, "can not add liquidity");
+        if(msg.sender != addLiquidityAdmin) revert NotAdmin("add liquidity admin");
+        if(tokenStatus[_token] != TokenStatus.PreSale) revert InvalidTokenStatus(_token);
 
         TokenParams storage p = params[_token];
         tokenStatus[_token] = TokenStatus.AddedLiquidity;
@@ -118,9 +118,9 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         nonReentrant
         whenNotPaused
     {
-        require(msg.sender == airdropAdmin, "airdrop admin only");
-        require(_tos.length > 0 && _tos.length == _amounts.length, "invalid length");
-        require(tokenStatus[_token] == TokenStatus.AddedLiquidity, "can not airdrop");
+        if(msg.sender != airdropAdmin) revert NotAdmin("airdrop admin");
+        if(_tos.length <= 0 || _tos.length != _amounts.length) revert InvalidArrayLength();
+        if(tokenStatus[_token] != TokenStatus.AddedLiquidity) revert InvalidTokenStatus(_token);
 
         for (uint256 i = 0; i < _tos.length; i++) {
             _airdrop(_token, _tos[i], _amounts[i]);
@@ -128,7 +128,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
     }
 
     function _airdrop(IERC20 _token, address _to, uint256 _amount) internal {
-        require(airdropped[_token][_to] == false, "already airdropped");
+        if (airdropped[_token][_to]) revert AlreadyAirdropped(_to);
         airdropped[_token][_to] = true;
 
         //1.单个用户amount是x402支付的时候就确定的
@@ -147,20 +147,18 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         nonReentrant
         whenNotPaused
     {
-        require(msg.sender == refundAdmin, "refund admin only");
-        require(_tos.length > 0 && _tos.length == _amounts.length, "invalid length");
-        require(
-            tokenStatus[_token] == TokenStatus.PreSale || tokenStatus[_token] == TokenStatus.Refund, "can not refund"
-        );
-        if (tokenStatus[_token] == TokenStatus.PreSale) tokenStatus[_token] = TokenStatus.Refund;
+        if(msg.sender != refundAdmin) revert NotAdmin("refund admin");
+        if(_tos.length <= 0 || _tos.length != _amounts.length) revert InvalidArrayLength();
+        if(tokenStatus[_token] != TokenStatus.PreSale && tokenStatus[_token] != TokenStatus.Refund) revert InvalidTokenStatus(_token);
 
+        if (tokenStatus[_token] == TokenStatus.PreSale) tokenStatus[_token] = TokenStatus.Refund;
         for (uint256 i = 0; i < _tos.length; i++) {
             _refund(_token, _tos[i], _amounts[i]);
         }
     }
 
     function _refund(IERC20 _token, address _to, uint256 _amount) internal {
-        require(refunded[_token][_to] == false, "airdropped already");
+        if (refunded[_token][_to]) revert AlreadyRefunded(_to);
         refunded[_token][_to] = true;
 
         fundingTokens[_token].safeTransfer(_to, _amount);
@@ -169,9 +167,9 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
 
     //手动操作，收集手续费用
     function collectSwapFees(IERC20 _token) external nonReentrant {
-        require(address(_token) != address(0), "invalid token");
+        if(address(_token) == address(0)) revert ZeroAddress("token");
         uint256 lpTokenId = lpTokenIds[_token];
-        require(lpTokenId != 0, "not exist token");
+        if(lpTokenId == 0) revert ZeroValue("lpTokenId");
 
         IERC20 fundingToken = fundingTokens[_token];
         uint256 fundingAmount = fundingToken.balanceOf(address(this));
