@@ -1,7 +1,23 @@
 [
   {
     "type": "constructor",
-    "inputs": [],
+    "inputs": [
+      {
+        "name": "_poolManger",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_positionManger",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_permit2",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
     "stateMutability": "nonpayable"
   },
   {
@@ -10,59 +26,46 @@
   },
   {
     "type": "function",
-    "name": "APR_SCALE_FACTOR",
+    "name": "PERMIT2",
     "inputs": [],
     "outputs": [
       {
         "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
+        "type": "address",
+        "internalType": "contract IAllowanceTransfer"
       }
     ],
     "stateMutability": "view"
   },
   {
     "type": "function",
-    "name": "MIN_AMOUNT",
+    "name": "POOL_MANAGER",
     "inputs": [],
     "outputs": [
       {
         "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
+        "type": "address",
+        "internalType": "contract IPoolManager"
       }
     ],
     "stateMutability": "view"
   },
   {
     "type": "function",
-    "name": "ONE_MBTC",
+    "name": "POSITION_MANAGER",
     "inputs": [],
     "outputs": [
       {
         "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
+        "type": "address",
+        "internalType": "contract IPositionManager"
       }
     ],
     "stateMutability": "view"
   },
   {
     "type": "function",
-    "name": "SECONDS_PER_DAY",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint32",
-        "internalType": "uint32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "SECONDS_PER_YEAR",
+    "name": "SCALE_FACTOR",
     "inputs": [],
     "outputs": [
       {
@@ -94,15 +97,23 @@
         "name": "_token",
         "type": "address",
         "internalType": "contract IERC20"
-      },
-      {
-        "name": "_preSaleSuccess",
-        "type": "bool",
-        "internalType": "bool"
       }
     ],
     "outputs": [],
     "stateMutability": "payable"
+  },
+  {
+    "type": "function",
+    "name": "addLiquidityAdmin",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -128,8 +139,8 @@
       },
       {
         "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
+        "type": "address",
+        "internalType": "address"
       }
     ],
     "outputs": [
@@ -143,41 +154,12 @@
   },
   {
     "type": "function",
-    "name": "airdroppedAmount",
-    "inputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract IERC20"
-      },
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "airdrops",
+    "name": "batchAirdrop",
     "inputs": [
       {
         "name": "_token",
         "type": "address",
         "internalType": "contract IERC20"
-      },
-      {
-        "name": "_ids",
-        "type": "uint256[]",
-        "internalType": "uint256[]"
       },
       {
         "name": "_tos",
@@ -195,65 +177,22 @@
   },
   {
     "type": "function",
-    "name": "amounts",
+    "name": "batchRefund",
     "inputs": [
       {
-        "name": "",
+        "name": "_token",
         "type": "address",
         "internalType": "contract IERC20"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "calStakeItemRewards",
-    "inputs": [
-      {
-        "name": "_id",
-        "type": "uint32",
-        "internalType": "uint32"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "createNewPeriod",
-    "inputs": [
-      {
-        "name": "_startTimestamp",
-        "type": "uint32",
-        "internalType": "uint32"
       },
       {
-        "name": "_ndays",
-        "type": "uint32",
-        "internalType": "uint32"
+        "name": "_tos",
+        "type": "address[]",
+        "internalType": "address[]"
       },
       {
-        "name": "_apr",
-        "type": "uint32",
-        "internalType": "uint32"
-      },
-      {
-        "name": "_stakeCap",
-        "type": "uint256",
-        "internalType": "uint256"
+        "name": "_amounts",
+        "type": "uint256[]",
+        "internalType": "uint256[]"
       }
     ],
     "outputs": [],
@@ -261,7 +200,33 @@
   },
   {
     "type": "function",
-    "name": "createTokenAndCreatePool",
+    "name": "collectFees",
+    "inputs": [
+      {
+        "name": "_token",
+        "type": "address",
+        "internalType": "contract IERC20"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "createTokenAdmin",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "deploy",
     "inputs": [
       {
         "name": "_name",
@@ -284,27 +249,12 @@
         "internalType": "uint256"
       },
       {
-        "name": "_currency",
+        "name": "_fundingToken",
         "type": "address",
         "internalType": "contract IERC20"
       },
       {
-        "name": "_amount",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "_quota",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "_start",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "_expiry",
+        "name": "_fundingAmount",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -314,58 +264,7 @@
   },
   {
     "type": "function",
-    "name": "currencies",
-    "inputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract IERC20"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract IERC20"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "currentPeriod",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint32",
-        "internalType": "uint32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "expiries",
-    "inputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract IERC20"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "feeRate",
+    "name": "deployFeeRate",
     "inputs": [],
     "outputs": [
       {
@@ -378,32 +277,51 @@
   },
   {
     "type": "function",
-    "name": "feeRates",
-    "inputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract IERC20"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "feeTo",
+    "name": "deployFeeTo",
     "inputs": [],
     "outputs": [
       {
         "name": "",
         "type": "address",
         "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "fundingAmounts",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IERC20"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "fundingTokens",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IERC20"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IERC20"
       }
     ],
     "stateMutability": "view"
@@ -431,71 +349,6 @@
       }
     ],
     "stateMutability": "pure"
-  },
-  {
-    "type": "function",
-    "name": "getPeriodConfig",
-    "inputs": [
-      {
-        "name": "_period",
-        "type": "uint32",
-        "internalType": "uint32"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "tuple",
-        "internalType": "struct LaunchpadCommon.PeriodConfig",
-        "components": [
-          {
-            "name": "startTimestamp",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "ndays",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "endTimestamp",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "apr",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "stakeCap",
-            "type": "uint256",
-            "internalType": "uint256"
-          }
-        ]
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getPeriodStakeAmount",
-    "inputs": [
-      {
-        "name": "_period",
-        "type": "uint32",
-        "internalType": "uint32"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
   },
   {
     "type": "function",
@@ -549,7 +402,7 @@
             "internalType": "bool"
           },
           {
-            "name": "timestamp",
+            "name": "updateTimestamp",
             "type": "uint256",
             "internalType": "uint256"
           }
@@ -560,54 +413,40 @@
   },
   {
     "type": "function",
-    "name": "getUserStakeAmount",
-    "inputs": [
-      {
-        "name": "_user",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "initConfig",
     "inputs": [
       {
-        "name": "_mbtcToken",
+        "name": "_createTokenAdmin",
         "type": "address",
         "internalType": "address"
       },
       {
-        "name": "_rewardsSourceAddress",
+        "name": "_addLiquidityAdmin",
         "type": "address",
         "internalType": "address"
       },
       {
-        "name": "_swapContract",
+        "name": "_airdropAdmin",
         "type": "address",
         "internalType": "address"
       },
       {
-        "name": "_oldStakeBtcContract",
+        "name": "_refundAdmin",
         "type": "address",
         "internalType": "address"
       },
       {
-        "name": "_specialCaller",
+        "name": "_usdcReceiveAddress",
         "type": "address",
         "internalType": "address"
       },
       {
-        "name": "_migrateCaller",
+        "name": "_feeTo",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "_swapFeeTo",
         "type": "address",
         "internalType": "address"
       }
@@ -649,45 +488,6 @@
   },
   {
     "type": "function",
-    "name": "mbtcToken",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "migrateCaller",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "oldStakeBtcContract",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "owner",
     "inputs": [],
     "outputs": [
@@ -695,6 +495,55 @@
         "name": "",
         "type": "address",
         "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "params",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IERC20"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "paymentToken",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "newToken",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "paymentTokenAmount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "newTokenAmount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "sqrtPricePaymentTokenFirst",
+        "type": "uint160",
+        "internalType": "uint160"
+      },
+      {
+        "name": "sqrtPriceNewTokenFirst",
+        "type": "uint160",
+        "internalType": "uint160"
+      },
+      {
+        "name": "paymentTokenIsToken0",
+        "type": "bool",
+        "internalType": "bool"
       }
     ],
     "stateMutability": "view"
@@ -734,112 +583,6 @@
   },
   {
     "type": "function",
-    "name": "perSales",
-    "inputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract IERC20"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "success",
-        "type": "bool",
-        "internalType": "bool"
-      },
-      {
-        "name": "addedLiquidity",
-        "type": "bool",
-        "internalType": "bool"
-      },
-      {
-        "name": "timestamp",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "periodConfigs",
-    "inputs": [
-      {
-        "name": "",
-        "type": "uint32",
-        "internalType": "uint32"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "startTimestamp",
-        "type": "uint32",
-        "internalType": "uint32"
-      },
-      {
-        "name": "ndays",
-        "type": "uint32",
-        "internalType": "uint32"
-      },
-      {
-        "name": "endTimestamp",
-        "type": "uint32",
-        "internalType": "uint32"
-      },
-      {
-        "name": "apr",
-        "type": "uint32",
-        "internalType": "uint32"
-      },
-      {
-        "name": "stakeCap",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "periodStakeAmount",
-    "inputs": [
-      {
-        "name": "",
-        "type": "uint32",
-        "internalType": "uint32"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "pools",
-    "inputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract IERC20"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "proxiableUUID",
     "inputs": [],
     "outputs": [
@@ -847,25 +590,6 @@
         "name": "",
         "type": "bytes32",
         "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "quotas",
-    "inputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract IERC20"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
       }
     ],
     "stateMutability": "view"
@@ -894,8 +618,8 @@
       },
       {
         "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
+        "type": "address",
+        "internalType": "address"
       }
     ],
     "outputs": [
@@ -909,34 +633,6 @@
   },
   {
     "type": "function",
-    "name": "refunds",
-    "inputs": [
-      {
-        "name": "_token",
-        "type": "address",
-        "internalType": "contract IERC20"
-      },
-      {
-        "name": "_ids",
-        "type": "uint256[]",
-        "internalType": "uint256[]"
-      },
-      {
-        "name": "_tos",
-        "type": "address[]",
-        "internalType": "address[]"
-      },
-      {
-        "name": "_amounts",
-        "type": "uint256[]",
-        "internalType": "uint256[]"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
     "name": "renounceOwnership",
     "inputs": [],
     "outputs": [],
@@ -944,25 +640,12 @@
   },
   {
     "type": "function",
-    "name": "rewardsSourceAddress",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "setCurrentPeriod",
+    "name": "setAddLiquidityAdmin",
     "inputs": [
       {
-        "name": "_period",
-        "type": "uint32",
-        "internalType": "uint32"
+        "name": "_account",
+        "type": "address",
+        "internalType": "address"
       }
     ],
     "outputs": [],
@@ -970,10 +653,49 @@
   },
   {
     "type": "function",
-    "name": "setMigrateCaller",
+    "name": "setAirdropAdmin",
     "inputs": [
       {
-        "name": "_caller",
+        "name": "_account",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setCreateTokenAdmin",
+    "inputs": [
+      {
+        "name": "_account",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setDeployFeeRate",
+    "inputs": [
+      {
+        "name": "_rate",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setDeployFeeTo",
+    "inputs": [
+      {
+        "name": "_account",
         "type": "address",
         "internalType": "address"
       }
@@ -996,17 +718,12 @@
   },
   {
     "type": "function",
-    "name": "setSpecialCallers",
+    "name": "setRefundAdmin",
     "inputs": [
       {
-        "name": "_caller",
+        "name": "_account",
         "type": "address",
         "internalType": "address"
-      },
-      {
-        "name": "_status",
-        "type": "bool",
-        "internalType": "bool"
       }
     ],
     "outputs": [],
@@ -1014,20 +731,36 @@
   },
   {
     "type": "function",
-    "name": "setTokenTimes",
+    "name": "setSwapFeeRate",
     "inputs": [
       {
-        "name": "_token",
+        "name": "_rate",
+        "type": "uint24",
+        "internalType": "uint24"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setSwapFeeTo",
+    "inputs": [
+      {
+        "name": "_account",
         "type": "address",
-        "internalType": "contract IERC20"
-      },
+        "internalType": "address"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "setTokenAddLiquidityRate",
+    "inputs": [
       {
-        "name": "_start",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "_expiry",
+        "name": "_rate",
         "type": "uint256",
         "internalType": "uint256"
       }
@@ -1037,163 +770,16 @@
   },
   {
     "type": "function",
-    "name": "specialCallers",
+    "name": "setUsdcReceiveAddress",
     "inputs": [
       {
-        "name": "",
+        "name": "_account",
         "type": "address",
         "internalType": "address"
       }
     ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "stakeId",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint32",
-        "internalType": "uint32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "stakeItems",
-    "inputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "account",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "id",
-        "type": "uint32",
-        "internalType": "uint32"
-      },
-      {
-        "name": "period",
-        "type": "uint32",
-        "internalType": "uint32"
-      },
-      {
-        "name": "startTimestamp",
-        "type": "uint32",
-        "internalType": "uint32"
-      },
-      {
-        "name": "endTimestamp",
-        "type": "uint32",
-        "internalType": "uint32"
-      },
-      {
-        "name": "unstakeTimestamp",
-        "type": "uint32",
-        "internalType": "uint32"
-      },
-      {
-        "name": "withdrawTimestamp",
-        "type": "uint32",
-        "internalType": "uint32"
-      },
-      {
-        "name": "updateTimestamp",
-        "type": "uint32",
-        "internalType": "uint32"
-      },
-      {
-        "name": "amount",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "rewards",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "stakePaused",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "starts",
-    "inputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract IERC20"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "supplies",
-    "inputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract IERC20"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "swapContract",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
+    "outputs": [],
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -1202,8 +788,8 @@
     "outputs": [
       {
         "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
+        "type": "uint24",
+        "internalType": "uint24"
       }
     ],
     "stateMutability": "view"
@@ -1223,13 +809,51 @@
   },
   {
     "type": "function",
-    "name": "tokenAdmin",
+    "name": "tokenAddLiquidityRate",
     "inputs": [],
     "outputs": [
       {
         "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "tokenStatus",
+    "inputs": [
+      {
+        "name": "",
         "type": "address",
-        "internalType": "address"
+        "internalType": "contract IERC20"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint8",
+        "internalType": "uint8"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "tokenSupplies",
+    "inputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "contract IERC20"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "stateMutability": "view"
@@ -1249,32 +873,6 @@
         "name": "",
         "type": "address",
         "internalType": "contract IERC20"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "totalPeriods",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint32",
-        "internalType": "uint32"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "totalStakeAmount",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
       }
     ],
     "stateMutability": "view"
@@ -1301,88 +899,6 @@
   },
   {
     "type": "function",
-    "name": "updatePeriodApr",
-    "inputs": [
-      {
-        "name": "_period",
-        "type": "uint32",
-        "internalType": "uint32"
-      },
-      {
-        "name": "_apr",
-        "type": "uint32",
-        "internalType": "uint32"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "updatePeriodCap",
-    "inputs": [
-      {
-        "name": "_period",
-        "type": "uint32",
-        "internalType": "uint32"
-      },
-      {
-        "name": "_stakeCap",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "updatePeriodConfig",
-    "inputs": [
-      {
-        "name": "_period",
-        "type": "uint32",
-        "internalType": "uint32"
-      },
-      {
-        "name": "_startTimestamp",
-        "type": "uint32",
-        "internalType": "uint32"
-      },
-      {
-        "name": "_ndays",
-        "type": "uint32",
-        "internalType": "uint32"
-      },
-      {
-        "name": "_apr",
-        "type": "uint32",
-        "internalType": "uint32"
-      },
-      {
-        "name": "_stakeCap",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "updateStakePaused",
-    "inputs": [
-      {
-        "name": "_stakePaused",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
     "name": "upgradeToAndCall",
     "inputs": [
       {
@@ -1401,19 +917,13 @@
   },
   {
     "type": "function",
-    "name": "userStakeAmount",
-    "inputs": [
+    "name": "usdcReceiveAddress",
+    "inputs": [],
+    "outputs": [
       {
         "name": "",
         "type": "address",
         "internalType": "address"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
       }
     ],
     "stateMutability": "view"
@@ -1430,6 +940,31 @@
       }
     ],
     "stateMutability": "view"
+  },
+  {
+    "type": "event",
+    "name": "AddLiquidityAdminChanged",
+    "inputs": [
+      {
+        "name": "adminSetter",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "oldAddLiquidityAdmin",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "newAddLiquidityAdmin",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
   },
   {
     "type": "event",
@@ -1464,6 +999,31 @@
   },
   {
     "type": "event",
+    "name": "AirdropAdminChanged",
+    "inputs": [
+      {
+        "name": "adminSetter",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "oldAirdropAdmin",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "newAirdropAdmin",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "Airdropped",
     "inputs": [
       {
@@ -1471,12 +1031,6 @@
         "type": "address",
         "indexed": false,
         "internalType": "address"
-      },
-      {
-        "name": "id",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
       },
       {
         "name": "token",
@@ -1495,6 +1049,56 @@
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "CollectFees",
+    "inputs": [
+      {
+        "name": "_token",
+        "type": "address",
+        "indexed": true,
+        "internalType": "contract IERC20"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "volume",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "CreateTokenAdminChanged",
+    "inputs": [
+      {
+        "name": "adminSetter",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "oldCreateTokenAdmin",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "newCreateTokenAdmin",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
       }
     ],
     "anonymous": false
@@ -1522,13 +1126,75 @@
         "internalType": "contract IERC20"
       },
       {
-        "name": "pool",
+        "name": "timestamp",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "p",
+        "type": "tuple",
+        "indexed": false,
+        "internalType": "struct UniswapV4.TokenParams",
+        "components": [
+          {
+            "name": "paymentToken",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "newToken",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "paymentTokenAmount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "newTokenAmount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "sqrtPricePaymentTokenFirst",
+            "type": "uint160",
+            "internalType": "uint160"
+          },
+          {
+            "name": "sqrtPriceNewTokenFirst",
+            "type": "uint160",
+            "internalType": "uint160"
+          },
+          {
+            "name": "paymentTokenIsToken0",
+            "type": "bool",
+            "internalType": "bool"
+          }
+        ]
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "DeployFeeRateChanged",
+    "inputs": [
+      {
+        "name": "adminSetter",
         "type": "address",
         "indexed": false,
         "internalType": "address"
       },
       {
-        "name": "timestamp",
+        "name": "oldDeployFeeRate",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "newDeployFeeRate",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
@@ -1538,7 +1204,7 @@
   },
   {
     "type": "event",
-    "name": "CurrentPeriodChanged",
+    "name": "DeployFeeToChanged",
     "inputs": [
       {
         "name": "adminSetter",
@@ -1547,16 +1213,16 @@
         "internalType": "address"
       },
       {
-        "name": "oldPeriod",
-        "type": "uint32",
-        "indexed": true,
-        "internalType": "uint32"
+        "name": "oldDeployFeeTo",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
       },
       {
-        "name": "newPeriod",
-        "type": "uint32",
-        "indexed": true,
-        "internalType": "uint32"
+        "name": "newDeployFeeTo",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
       }
     ],
     "anonymous": false
@@ -1594,6 +1260,31 @@
   },
   {
     "type": "event",
+    "name": "FeesCollected",
+    "inputs": [
+      {
+        "name": "recipient",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "amountToken0",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "amountToken1",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "InitConfig",
     "inputs": [
       {
@@ -1603,40 +1294,86 @@
         "internalType": "address"
       },
       {
-        "name": "mbtcToken",
+        "name": "createTokenAdmin",
         "type": "address",
         "indexed": false,
         "internalType": "address"
       },
       {
-        "name": "rewardsSourceAddress",
+        "name": "addLiquidityAdmin",
         "type": "address",
         "indexed": false,
         "internalType": "address"
       },
       {
-        "name": "swapContract",
+        "name": "airdropAdmin",
         "type": "address",
         "indexed": false,
         "internalType": "address"
       },
       {
-        "name": "oldStakeBtcContract",
+        "name": "refundAdmin",
         "type": "address",
         "indexed": false,
         "internalType": "address"
       },
       {
-        "name": "specialCaller",
+        "name": "paymentToken",
         "type": "address",
         "indexed": false,
         "internalType": "address"
       },
       {
-        "name": "migrateCaller",
+        "name": "feeTo",
         "type": "address",
         "indexed": false,
         "internalType": "address"
+      },
+      {
+        "name": "swapFeeTo",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "InitializePool",
+    "inputs": [
+      {
+        "name": "poolKey",
+        "type": "tuple",
+        "indexed": false,
+        "internalType": "struct PoolKey",
+        "components": [
+          {
+            "name": "currency0",
+            "type": "address",
+            "internalType": "Currency"
+          },
+          {
+            "name": "currency1",
+            "type": "address",
+            "internalType": "Currency"
+          },
+          {
+            "name": "fee",
+            "type": "uint24",
+            "internalType": "uint24"
+          },
+          {
+            "name": "tickSpacing",
+            "type": "int24",
+            "internalType": "int24"
+          },
+          {
+            "name": "hooks",
+            "type": "address",
+            "internalType": "contract IHooks"
+          }
+        ]
       }
     ],
     "anonymous": false
@@ -1656,102 +1393,19 @@
   },
   {
     "type": "event",
-    "name": "MigrateCallerChanged",
+    "name": "LiquidityDeployed",
     "inputs": [
       {
-        "name": "adminSetter",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      },
-      {
-        "name": "oldCaller",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      },
-      {
-        "name": "newCaller",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "MigrateStake",
-    "inputs": [
-      {
-        "name": "msgSender",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      },
-      {
-        "name": "stakeItem",
-        "type": "tuple",
-        "indexed": false,
-        "internalType": "struct LaunchpadCommon.StakeItem",
-        "components": [
-          {
-            "name": "account",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "id",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "period",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "startTimestamp",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "endTimestamp",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "unstakeTimestamp",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "withdrawTimestamp",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "updateTimestamp",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "amount",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "rewards",
-            "type": "uint256",
-            "internalType": "uint256"
-          }
-        ]
-      },
-      {
-        "name": "migrateTimestamp",
+        "name": "tokenId",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
+      },
+      {
+        "name": "liquidity",
+        "type": "uint128",
+        "indexed": false,
+        "internalType": "uint128"
       }
     ],
     "anonymous": false
@@ -1821,166 +1475,6 @@
   },
   {
     "type": "event",
-    "name": "PeriodAprUpdated",
-    "inputs": [
-      {
-        "name": "adminSetter",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      },
-      {
-        "name": "period",
-        "type": "uint32",
-        "indexed": true,
-        "internalType": "uint32"
-      },
-      {
-        "name": "oldApr",
-        "type": "uint32",
-        "indexed": false,
-        "internalType": "uint32"
-      },
-      {
-        "name": "newApr",
-        "type": "uint32",
-        "indexed": false,
-        "internalType": "uint32"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "PeriodCapUpdated",
-    "inputs": [
-      {
-        "name": "adminSetter",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      },
-      {
-        "name": "period",
-        "type": "uint32",
-        "indexed": true,
-        "internalType": "uint32"
-      },
-      {
-        "name": "oldStakeCap",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "newStakeCap",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "PeriodConfigUpdated",
-    "inputs": [
-      {
-        "name": "adminSetter",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      },
-      {
-        "name": "period",
-        "type": "uint32",
-        "indexed": true,
-        "internalType": "uint32"
-      },
-      {
-        "name": "startTimestamp",
-        "type": "uint32",
-        "indexed": false,
-        "internalType": "uint32"
-      },
-      {
-        "name": "ndays",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "endTimestamp",
-        "type": "uint32",
-        "indexed": false,
-        "internalType": "uint32"
-      },
-      {
-        "name": "apr",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "stakeCap",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "PeriodCreated",
-    "inputs": [
-      {
-        "name": "adminSetter",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      },
-      {
-        "name": "period",
-        "type": "uint32",
-        "indexed": true,
-        "internalType": "uint32"
-      },
-      {
-        "name": "startTimestamp",
-        "type": "uint32",
-        "indexed": false,
-        "internalType": "uint32"
-      },
-      {
-        "name": "ndays",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "endTimestamp",
-        "type": "uint32",
-        "indexed": false,
-        "internalType": "uint32"
-      },
-      {
-        "name": "apr",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "stakeCap",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
     "name": "Refund",
     "inputs": [
       {
@@ -1988,12 +1482,6 @@
         "type": "address",
         "indexed": true,
         "internalType": "contract IERC20"
-      },
-      {
-        "name": "id",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
       },
       {
         "name": "to",
@@ -2018,7 +1506,7 @@
   },
   {
     "type": "event",
-    "name": "SetSpecialCallers",
+    "name": "RefundAdminChanged",
     "inputs": [
       {
         "name": "adminSetter",
@@ -2027,220 +1515,23 @@
         "internalType": "address"
       },
       {
-        "name": "caller",
+        "name": "oldRefundAdmin",
         "type": "address",
         "indexed": false,
         "internalType": "address"
       },
       {
-        "name": "status",
-        "type": "bool",
+        "name": "newRefundAdmin",
+        "type": "address",
         "indexed": false,
-        "internalType": "bool"
+        "internalType": "address"
       }
     ],
     "anonymous": false
   },
   {
     "type": "event",
-    "name": "SetTimes",
-    "inputs": [
-      {
-        "name": "sender",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "token",
-        "type": "address",
-        "indexed": true,
-        "internalType": "contract IERC20"
-      },
-      {
-        "name": "oldStart",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "oldExpiry",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "start",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "expiry",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "Stake",
-    "inputs": [
-      {
-        "name": "msgSender",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      },
-      {
-        "name": "stakeItem",
-        "type": "tuple",
-        "indexed": false,
-        "internalType": "struct LaunchpadCommon.StakeItem",
-        "components": [
-          {
-            "name": "account",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "id",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "period",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "startTimestamp",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "endTimestamp",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "unstakeTimestamp",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "withdrawTimestamp",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "updateTimestamp",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "amount",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "rewards",
-            "type": "uint256",
-            "internalType": "uint256"
-          }
-        ]
-      },
-      {
-        "name": "stakeTimestamp",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "Unstake",
-    "inputs": [
-      {
-        "name": "msgSender",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      },
-      {
-        "name": "stakeItem",
-        "type": "tuple",
-        "indexed": false,
-        "internalType": "struct LaunchpadCommon.StakeItem",
-        "components": [
-          {
-            "name": "account",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "id",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "period",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "startTimestamp",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "endTimestamp",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "unstakeTimestamp",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "withdrawTimestamp",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "updateTimestamp",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "amount",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "rewards",
-            "type": "uint256",
-            "internalType": "uint256"
-          }
-        ]
-      },
-      {
-        "name": "unstakeTimestamp",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "UpdateEndTimestamp",
+    "name": "SwapFeeRateChanged",
     "inputs": [
       {
         "name": "adminSetter",
@@ -2249,23 +1540,23 @@
         "internalType": "address"
       },
       {
-        "name": "oldEndTimestamp",
-        "type": "uint256",
+        "name": "oldSwapFeeRate",
+        "type": "uint24",
         "indexed": false,
-        "internalType": "uint256"
+        "internalType": "uint24"
       },
       {
-        "name": "endTimestamp",
-        "type": "uint256",
+        "name": "newSwapFeeRate",
+        "type": "uint24",
         "indexed": false,
-        "internalType": "uint256"
+        "internalType": "uint24"
       }
     ],
     "anonymous": false
   },
   {
     "type": "event",
-    "name": "UpdateStakeCap",
+    "name": "SwapFeeToChanged",
     "inputs": [
       {
         "name": "adminSetter",
@@ -2274,23 +1565,23 @@
         "internalType": "address"
       },
       {
-        "name": "oldStakeCap",
-        "type": "uint256",
+        "name": "oldSwapFeeTo",
+        "type": "address",
         "indexed": false,
-        "internalType": "uint256"
+        "internalType": "address"
       },
       {
-        "name": "stakeCap",
-        "type": "uint256",
+        "name": "newSwapFeeTo",
+        "type": "address",
         "indexed": false,
-        "internalType": "uint256"
+        "internalType": "address"
       }
     ],
     "anonymous": false
   },
   {
     "type": "event",
-    "name": "UpdateStakePaused",
+    "name": "TokenAddLiquidityRateChanged",
     "inputs": [
       {
         "name": "adminSetter",
@@ -2299,10 +1590,16 @@
         "internalType": "address"
       },
       {
-        "name": "stakePaused",
-        "type": "bool",
+        "name": "oldTokenAddLiquidityRate",
+        "type": "uint256",
         "indexed": false,
-        "internalType": "bool"
+        "internalType": "uint256"
+      },
+      {
+        "name": "newTokenAddLiquidityRate",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -2322,77 +1619,25 @@
   },
   {
     "type": "event",
-    "name": "Withdraw",
+    "name": "UsdcReceiveAddressChanged",
     "inputs": [
       {
-        "name": "msgSender",
+        "name": "adminSetter",
         "type": "address",
         "indexed": false,
         "internalType": "address"
       },
       {
-        "name": "stakeItem",
-        "type": "tuple",
+        "name": "oldUsdcReceiveAddress",
+        "type": "address",
         "indexed": false,
-        "internalType": "struct LaunchpadCommon.StakeItem",
-        "components": [
-          {
-            "name": "account",
-            "type": "address",
-            "internalType": "address"
-          },
-          {
-            "name": "id",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "period",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "startTimestamp",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "endTimestamp",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "unstakeTimestamp",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "withdrawTimestamp",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "updateTimestamp",
-            "type": "uint32",
-            "internalType": "uint32"
-          },
-          {
-            "name": "amount",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "rewards",
-            "type": "uint256",
-            "internalType": "uint256"
-          }
-        ]
+        "internalType": "address"
       },
       {
-        "name": "withdrawTimestamp",
-        "type": "uint256",
+        "name": "newUsdcReceiveAddress",
+        "type": "address",
         "indexed": false,
-        "internalType": "uint256"
+        "internalType": "address"
       }
     ],
     "anonymous": false
@@ -2714,6 +1959,22 @@
     "type": "error",
     "name": "ReentrancyGuardStatus",
     "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "SafeCastOverflowedUintDowncast",
+    "inputs": [
+      {
+        "name": "bits",
+        "type": "uint8",
+        "internalType": "uint8"
+      },
+      {
+        "name": "value",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
   },
   {
     "type": "error",

@@ -26,7 +26,7 @@ contract TestX402LaunchpadScript is Script {
         launchpad.setAddLiquidityAdmin(deployer);
         launchpad.setAirdropAdmin(deployer);
         launchpad.setRefundAdmin(deployer);
-        launchpad.setDeployFeeTo(deployer);
+        launchpad.setFeeTo(deployer);
         launchpad.setSwapFeeTo(deployer);
         vm.stopBroadcast();
     }
@@ -60,12 +60,9 @@ contract TestX402LaunchpadScript is Script {
         // 使用ETH作为支付代币
         IERC20 currency = IERC20(address(0));
         uint256 amount = 1 ether; // 1 ETH作为支付代币
-        uint256 quota = 100000 * 10**18; // 10万代币配额
-        uint256 start = block.timestamp + 1 hours;
-        uint256 expiry = start + 30 days;
         
         // 调用createTokenAndCreatePool
-        launchpad.createTokenAndCreatePool(name, symbol, decimals, cap, currency, amount, quota, start, expiry);
+        launchpad.deploy(name, symbol, decimals, cap, currency, amount);
         
         // 验证代币是否创建成功
         address tokenAddress = address(launchpad.tokens(symbol));
@@ -78,7 +75,7 @@ contract TestX402LaunchpadScript is Script {
         console.log("Total supply:", testToken.totalSupply());
         
         // 验证池子是否创建成功
-        uint256 tokenAmount = launchpad.amounts(IERC20(tokenAddress));
+        uint256 tokenAmount = launchpad.fundingAmounts(IERC20(tokenAddress));
         require(tokenAmount > 0, "Pool creation failed");
         console.log("Pool created successfully, liquidity amount:", tokenAmount);
         
@@ -101,7 +98,7 @@ contract TestX402LaunchpadScript is Script {
         bool preSaleSuccess = true;
         
         // 调用addLiquidity
-        launchpad.addLiquidity(token, preSaleSuccess, 0.5 ether);
+        launchpad.addLiquidity(token);
         
         console.log("Liquidity added successfully");
         console.log("Pre-sale status:", preSaleSuccess);

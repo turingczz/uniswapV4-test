@@ -20,13 +20,13 @@ import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract UniswapV4 {
     struct TokenParams {
-        address paymentToken;
-        address newToken;
-        uint256 paymentTokenAmount;
-        uint256 newTokenAmount;
-        uint160 sqrtPricePaymentTokenFirst;
-        uint160 sqrtPriceNewTokenFirst;
-        bool paymentTokenIsToken0;
+        address fundingToken;
+        address token;
+        uint256 fundingTokenAmount;
+        uint256 tokenAmount;
+        uint160 sqrtPriceFundingTokenFirst;
+        uint160 sqrtPriceTokenFirst;
+        bool fundingTokenIsToken0;
     }
 
     // -- immutable state --
@@ -39,6 +39,8 @@ contract UniswapV4 {
 
     /// @notice Permit2 for token approvals
     IAllowanceTransfer public immutable PERMIT2;
+
+    uint256[50] __gap;
 
     // event
     event InitializePool(PoolKey poolKey);
@@ -104,8 +106,8 @@ contract UniswapV4 {
         bytes memory actions = abi.encodePacked(uint8(Actions.MINT_POSITION), uint8(Actions.SETTLE_PAIR));
 
         // Transfer tokens from caller to contract first
-        IERC20(p.paymentToken).transferFrom(msg.sender, address(this), p.paymentTokenAmount);
-        IERC20(p.newToken).transferFrom(msg.sender, address(this), p.newTokenAmount);
+        IERC20(p.fundingToken).transferFrom(msg.sender, address(this), p.fundingTokenAmount);
+        IERC20(p.token).transferFrom(msg.sender, address(this), p.tokenAmount);
 
         (uint128 amount0Max, uint128 amount1Max, uint128 liquidity) = _calculateMintParams(p, poolKey);
 
@@ -113,14 +115,14 @@ contract UniswapV4 {
 
         // Set up approvals for Permit2 and PositionManager
         // Approve Permit2 to spend both tokens with the correct amount
-        IERC20(p.paymentToken).approve(address(PERMIT2), p.paymentTokenAmount);
-        IERC20(p.newToken).approve(address(PERMIT2), p.newTokenAmount);
+        IERC20(p.fundingToken).approve(address(PERMIT2), p.fundingTokenAmount);
+        IERC20(p.token).approve(address(PERMIT2), p.tokenAmount);
 
         // Approve PositionManager via Permit2 for both tokens
         PERMIT2.approve(
-            p.paymentToken, address(POSITION_MANAGER), SafeCast.toUint160(p.paymentTokenAmount), type(uint48).max
+            p.fundingToken, address(POSITION_MANAGER), SafeCast.toUint160(p.fundingTokenAmount), type(uint48).max
         );
-        PERMIT2.approve(p.newToken, address(POSITION_MANAGER), SafeCast.toUint160(p.newTokenAmount), type(uint48).max);
+        PERMIT2.approve(p.token, address(POSITION_MANAGER), SafeCast.toUint160(p.tokenAmount), type(uint48).max);
 
         bytes[] memory params = new bytes[](2);
         params[0] =
@@ -161,18 +163,18 @@ contract UniswapV4 {
         uint256 amount0;
         uint256 amount1;
 
-        if (p.paymentTokenIsToken0) {
-            amount0 = p.paymentTokenAmount;
-            amount1 = p.newTokenAmount;
+        if (p.fundingTokenIsToken0) {
+            amount0 = p.fundingTokenAmount;
+            amount1 = p.tokenAmount;
         } else {
-            amount0 = p.newTokenAmount;
-            amount1 = p.paymentTokenAmount;
+            amount0 = p.tokenAmount;
+            amount1 = p.fundingTokenAmount;
         }
 
         amount0Max = SafeCast.toUint128(amount0);
         amount1Max = SafeCast.toUint128(amount1);
 
-        uint256 sqrtPriceX96 = p.paymentTokenIsToken0 ? p.sqrtPricePaymentTokenFirst : p.sqrtPriceNewTokenFirst;
+        uint256 sqrtPriceX96 = p.fundingTokenIsToken0 ? p.sqrtPriceFundingTokenFirst : p.sqrtPriceTokenFirst;
         (int24 tickLower, int24 tickUpper) = _fullRangeTicks(poolKey.tickSpacing);
 
         liquidity = LiquidityAmounts.getLiquidityForAmounts(
@@ -201,50 +203,50 @@ contract UniswapV4 {
         pure
         returns (address token0, address token1, uint160 sqrtPriceX96)
     {
-        if (p.paymentTokenIsToken0) {
-            token0 = p.paymentToken;
-            token1 = p.newToken;
-            sqrtPriceX96 = p.sqrtPricePaymentTokenFirst;
+        if (p.fundingTokenIsToken0) {
+            token0 = p.fundingToken;
+            token1 = p.token;
+            sqrtPriceX96 = p.sqrtPriceFundingTokenFirst;
         } else {
-            token0 = p.newToken;
-            token1 = p.paymentToken;
-            sqrtPriceX96 = p.sqrtPriceNewTokenFirst;
+            token0 = p.token;
+            token1 = p.fundingToken;
+            sqrtPriceX96 = p.sqrtPriceTokenFirst;
         }
     }
 
     function _calculateSqrtPrices(
-        uint256 paymentTokenAmount,
-        uint256 newTokenAmount,
-        bool paymentTokenIsToken0
+        uint256 fundingTokenAmount,
+        uint256 tokenAmount,
+        bool fundingTokenIsToken0
     )
         internal
         pure
-        returns (uint160 sqrtPricePaymentTokenFirst, uint160 sqrtPriceNewTokenFirst)
+        returns (uint160 sqrtPriceFundingTokenFirst, uint160 sqrtPriceTokenFirst)
     {
-        if (paymentTokenAmount == 0 || newTokenAmount == 0) revert("Amounts must be positive");
+        if (fundingTokenAmount == 0 || tokenAmount == 0) revert("Amounts must be positive");
 
         // Calculate the price ratio (Q64.96 format)
         // Price = (token1 quantity * 2^96) / token0 quantity
         uint256 priceRatio;
 
-        if (paymentTokenIsToken0) {
+        if (fundingTokenIsToken0) {
             // paymentToken是token0，newToken是token1
             // price = (newTokenAmount * 2^96) / paymentTokenAmount
-            priceRatio = (uint256(newTokenAmount) << 96) / paymentTokenAmount;
-            sqrtPricePaymentTokenFirst = uint160(_sqrt(priceRatio));
+            priceRatio = (uint256(tokenAmount) << 96) / fundingTokenAmount;
+            sqrtPriceFundingTokenFirst = uint160(_sqrt(priceRatio));
 
             // Reverse price = (paymentTokenAmount * 2^96) / newTokenAmount
-            uint256 reversePriceRatio = (uint256(paymentTokenAmount) << 96) / newTokenAmount;
-            sqrtPriceNewTokenFirst = uint160(_sqrt(reversePriceRatio));
+            uint256 reversePriceRatio = (uint256(fundingTokenAmount) << 96) / tokenAmount;
+            sqrtPriceTokenFirst = uint160(_sqrt(reversePriceRatio));
         } else {
             // newToken是token0，paymentToken是token1
             // price = (paymentTokenAmount * 2^96) / newTokenAmount
-            priceRatio = (uint256(paymentTokenAmount) << 96) / newTokenAmount;
-            sqrtPriceNewTokenFirst = uint160(_sqrt(priceRatio));
+            priceRatio = (uint256(fundingTokenAmount) << 96) / tokenAmount;
+            sqrtPriceTokenFirst = uint160(_sqrt(priceRatio));
 
             // Reverse price = (newTokenAmount * 2^96) / paymentTokenAmount
-            uint256 reversePriceRatio = (uint256(newTokenAmount) << 96) / paymentTokenAmount;
-            sqrtPricePaymentTokenFirst = uint160(_sqrt(reversePriceRatio));
+            uint256 reversePriceRatio = (uint256(tokenAmount) << 96) / fundingTokenAmount;
+            sqrtPriceFundingTokenFirst = uint160(_sqrt(reversePriceRatio));
         }
     }
 

@@ -23,11 +23,13 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
     address public airdropAdmin;
     address public refundAdmin;
     address public usdcReceiveAddress;
-    address public deployFeeTo;
+    address public feeTo;
     address public swapFeeTo;
-    uint256 public deployFeeRate; //default 50000 5%
+    uint256 public FeeRate; //default 50000 5%
     uint24 public swapFeeRate; //default 3000 0.3% 标准交易对（最常用）
     uint256 public tokenAddLiquidityRate; //default 200000 20%
+
+    uint256[50] __commGap;
 
     modifier nonReentrant() {
         if (_nonReentrantStatus != 0) revert ReentrancyGuardStatus();
@@ -96,9 +98,9 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
         airdropAdmin = _airdropAdmin;
         refundAdmin = _refundAdmin;
         usdcReceiveAddress = _usdcReceiveAddress;
-        deployFeeTo = _feeTo;
+        feeTo = _feeTo;
         swapFeeTo = _swapFeeTo;
-        deployFeeRate = 50_000; //default 5%
+        FeeRate = 50_000; //default 5%
         swapFeeRate = 10_000; //default 1%
         tokenAddLiquidityRate = 200_000; //default 20%
 
@@ -179,11 +181,11 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
      * Fee recipient receives protocol fees
      * @param _account Address of the fee recipient
      */
-    function setDeployFeeTo(address _account) public onlyOwner {
-        if (_account == address(0)) revert ZeroAddress("set deployFeeTo");
-        address oldFeeTo = deployFeeTo;
-        deployFeeTo = _account;
-        emit DeployFeeToChanged(msg.sender, oldFeeTo, deployFeeTo);
+    function setFeeTo(address _account) public onlyOwner {
+        if (_account == address(0)) revert ZeroAddress("set feeTo");
+        address oldFeeTo = feeTo;
+        feeTo = _account;
+        emit FeeToChanged(msg.sender, oldFeeTo, feeTo);
     }
 
     /**
@@ -203,10 +205,10 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
      * Fee rate is expressed in basis points (1e18 = 100%)
      * @param _rate Fee rate in basis points
      */
-    function setDeployFeeRate(uint256 _rate) public onlyOwner {
-        uint256 oldDeployFeeRate = deployFeeRate;
-        deployFeeRate = _rate;
-        emit DeployFeeRateChanged(msg.sender, oldDeployFeeRate, deployFeeRate);
+    function setFeeRate(uint256 _rate) public onlyOwner {
+        uint256 oldFeeRate = FeeRate;
+        FeeRate = _rate;
+        emit FeeRateChanged(msg.sender, oldFeeRate, FeeRate);
     }
 
     /**
@@ -304,9 +306,9 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
     event AirdropAdminChanged(address adminSetter, address oldAirdropAdmin, address newAirdropAdmin);
     event RefundAdminChanged(address adminSetter, address oldRefundAdmin, address newRefundAdmin);
     event UsdcReceiveAddressChanged(address adminSetter, address oldUsdcReceiveAddress, address newUsdcReceiveAddress);
-    event DeployFeeToChanged(address adminSetter, address oldDeployFeeTo, address newDeployFeeTo);
+    event FeeToChanged(address adminSetter, address oldFeeTo, address newFeeTo);
     event SwapFeeToChanged(address adminSetter, address oldSwapFeeTo, address newSwapFeeTo);
-    event DeployFeeRateChanged(address adminSetter, uint256 oldDeployFeeRate, uint256 newDeployFeeRate);
+    event FeeRateChanged(address adminSetter, uint256 oldFeeRate, uint256 newFeeRate);
     event SwapFeeRateChanged(address adminSetter, uint24 oldSwapFeeRate, uint24 newSwapFeeRate);
     event TokenAddLiquidityRateChanged(
         address adminSetter, uint256 oldTokenAddLiquidityRate, uint256 newTokenAddLiquidityRate
