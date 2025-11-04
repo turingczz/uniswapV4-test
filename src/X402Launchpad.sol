@@ -17,10 +17,12 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
     string public constant version = "1.0.0";
 
     enum TokenStatus {
-        PreSale,    // 0
+        PreSale, // 0
         AddedLiquidity, // 1
-        Refund    // 2
+        Refund // 2
+
     }
+
     mapping(string => IERC20) public tokens;
     mapping(IERC20 => uint256) public tokenSupplies;
     mapping(IERC20 => IERC20) public fundingTokens;
@@ -29,7 +31,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
     mapping(IERC20 => TokenParams) public params;
     mapping(IERC20 => uint256) public lpTokenIds;
     mapping(IERC20 => TokenStatus) public tokenStatus; //0 presale 1 added liquidity 2 refund
-                                                //合约不管理失败，只看成功发射的状态；第一次refund，就标识为refund；只有成功才能空投
+        //合约不管理失败，只看成功发射的状态；第一次refund，就标识为refund；只有成功才能空投
     mapping(IERC20 => mapping(address => bool)) public airdropped; //to是否空投
     mapping(IERC20 => mapping(address => bool)) public refunded; //to是否退款
 
@@ -90,19 +92,13 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         fundingAmounts[token] = _fundingAmount;
         params[token] = p;
     }
+
     event CreateTokenAndCreatePool(
         address msgSender, string _symbol, IERC20 indexed token, uint256 timestamp, TokenParams p
     );
 
     //Completed
-    function addLiquidity(
-        IERC20 _token
-    )
-        external
-        payable
-        nonReentrant
-        whenNotPaused
-    {
+    function addLiquidity(IERC20 _token) external payable nonReentrant whenNotPaused {
         require(msg.sender == addLiquidityAdmin, "add liquidity admin only");
         require(tokenStatus[_token] == TokenStatus.PreSale, "can not add liquidity");
 
@@ -113,6 +109,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         lpTokenIds[_token] = _deployLiquidity(p, swapFeeRate, 200);
         emit AddedLiquidity(msg.sender, _token, block.timestamp);
     }
+
     event AddedLiquidity(address msgSender, IERC20 indexed token, uint256 timestamp);
 
     //空投，打满添加流动性后，官方会发放80%的代币给用户
@@ -143,6 +140,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         _token.safeTransfer(_to, _amount);
         emit Airdropped(msg.sender, _token, _to, _amount);
     }
+
     event Airdropped(address sender, IERC20 indexed token, address indexed to, uint256 amount);
 
     //退款，只能在结束时间之后，官方调用
@@ -157,7 +155,9 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
     {
         require(msg.sender == refundAdmin, "refund admin only");
         require(_tos.length > 0 && _tos.length == _amounts.length, "invalid length");
-        require(tokenStatus[_token] == TokenStatus.PreSale || tokenStatus[_token] == TokenStatus.Refund, "can not refund");
+        require(
+            tokenStatus[_token] == TokenStatus.PreSale || tokenStatus[_token] == TokenStatus.Refund, "can not refund"
+        );
         if (tokenStatus[_token] == TokenStatus.PreSale) tokenStatus[_token] = TokenStatus.Refund;
 
         for (uint256 i = 0; i < _tos.length; i++) {
@@ -173,6 +173,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         fundingToken.safeTransfer(to, amount);
         emit Refund(token, to, amount);
     }
+
     event Refund(IERC20 indexed token, address indexed to, uint256 amount);
 
     //手动操作，收集手续费用
@@ -192,5 +193,6 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         _token.safeTransfer(swapFeeTo, tokenSwapFee);
         emit CollectSwapFees(_token, fundingSwapFee, tokenSwapFee);
     }
+
     event CollectSwapFees(IERC20 indexed _token, uint256 fundingSwapFee, uint256 tokenSwapFee);
 }
