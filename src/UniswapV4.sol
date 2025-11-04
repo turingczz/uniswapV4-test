@@ -224,40 +224,20 @@ contract UniswapV4 {
     {
         if (fundingTokenAmount == 0 || tokenAmount == 0) revert("Amounts must be positive");
 
-        // Calculate the price ratio (Q64.96 format)
-        // Price = (token1 quantity * 2^96) / token0 quantity
-        uint256 priceRatio;
-
         if (fundingTokenIsToken0) {
-            // paymentToken是token0，newToken是token1
-            // price = (newTokenAmount * 2^96) / paymentTokenAmount
-            priceRatio = (uint256(tokenAmount) << 96) / fundingTokenAmount;
-            sqrtPriceFundingTokenFirst = uint160(_sqrt(priceRatio));
-
-            // Reverse price = (paymentTokenAmount * 2^96) / newTokenAmount
-            uint256 reversePriceRatio = (uint256(fundingTokenAmount) << 96) / tokenAmount;
-            sqrtPriceTokenFirst = uint160(_sqrt(reversePriceRatio));
+            // fundingToken是token0，token是token1
+            // price = (tokenAmount * 2^96) / fundingTokenAmount
+            sqrtPriceFundingTokenFirst = uint160((uint256(tokenAmount) << 96) / fundingTokenAmount);
+            
+            // Reverse price = (fundingTokenAmount * 2^96) / tokenAmount
+            sqrtPriceTokenFirst = uint160((uint256(fundingTokenAmount) << 96) / tokenAmount);
         } else {
-            // newToken是token0，paymentToken是token1
-            // price = (paymentTokenAmount * 2^96) / newTokenAmount
-            priceRatio = (uint256(fundingTokenAmount) << 96) / tokenAmount;
-            sqrtPriceTokenFirst = uint160(_sqrt(priceRatio));
-
-            // Reverse price = (newTokenAmount * 2^96) / paymentTokenAmount
-            uint256 reversePriceRatio = (uint256(tokenAmount) << 96) / fundingTokenAmount;
-            sqrtPriceFundingTokenFirst = uint160(_sqrt(reversePriceRatio));
-        }
-    }
-
-    function _sqrt(uint256 x) internal pure returns (uint256 y) {
-        if (x == 0) return 0;
-
-        uint256 z = (x + 1) / 2;
-        y = x;
-
-        while (z < y) {
-            y = z;
-            z = (x / z + z) / 2;
+            // token是token0，fundingToken是token1
+            // price = (fundingTokenAmount * 2^96) / tokenAmount
+            sqrtPriceTokenFirst = uint160((uint256(fundingTokenAmount) << 96) / tokenAmount);
+            
+            // Reverse price = (tokenAmount * 2^96) / fundingTokenAmount
+            sqrtPriceFundingTokenFirst = uint160((uint256(tokenAmount) << 96) / fundingTokenAmount);
         }
     }
 }
