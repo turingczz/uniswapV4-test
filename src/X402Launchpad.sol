@@ -15,7 +15,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
     string public constant version = "1.0.0";
 
     enum TokenStatus {
-        PreSale, // 0
+        Presale, // 0
         AddedLiquidity, // 1
         Refund // 2
     }
@@ -36,7 +36,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
     event Deploy(address msgSender, string symbol, IERC20 indexed token, uint256 timestamp, TokenParams p);
     event LiquidityAdded(address msgSender, IERC20 indexed token, uint256 lpTokenId, uint256 timestamp);
     event Airdropped(address sender, IERC20 indexed token, address indexed to, uint256 amount);
-    event Refund(IERC20 indexed token, address indexed to, uint256 amount);
+    event Refund(IERC20 indexed token, IERC20 indexed fundingToken, address indexed to, uint256 amount);
     event SwapFeesCollected(IERC20 indexed _token, uint256 fundingSwapFee, uint256 tokenSwapFee);
 
     constructor(
@@ -62,7 +62,6 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         uint256 _fundingAmount
     )
         external
-        payable
         nonReentrant
         whenNotPaused
     {
@@ -96,9 +95,9 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         params[token] = p;
     }
 
-    function addLiquidity(IERC20 _token) external payable nonReentrant whenNotPaused {
+    function addLiquidity(IERC20 _token) external nonReentrant whenNotPaused {
         if(msg.sender != addLiquidityAdmin) revert NotAdmin("add liquidity admin");
-        if(tokenStatus[_token] != TokenStatus.PreSale) revert InvalidTokenStatus(_token);
+        if(tokenStatus[_token] != TokenStatus.Presale) revert InvalidTokenStatus(_token);
 
         TokenParams storage p = params[_token];
         tokenStatus[_token] = TokenStatus.AddedLiquidity;
@@ -112,18 +111,18 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
     function batchAirdrop(
         IERC20 _token,
         address[] calldata _tos,
-        uint256[] calldata _amounts
+        uint256 _amount
     )
         external
         nonReentrant
         whenNotPaused
     {
         if(msg.sender != airdropAdmin) revert NotAdmin("airdrop admin");
-        if(_tos.length <= 0 || _tos.length != _amounts.length) revert InvalidArrayLength();
+        if(_tos.length <= 0) revert InvalidArrayLength();
         if(tokenStatus[_token] != TokenStatus.AddedLiquidity) revert InvalidTokenStatus(_token);
 
         for (uint256 i = 0; i < _tos.length; i++) {
-            _airdrop(_token, _tos[i], _amounts[i]);
+            _airdrop(_token, _tos[i], _amount);
         }
     }
 
@@ -141,19 +140,19 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
     function batchRefund(
         IERC20 _token,
         address[] calldata _tos,
-        uint256[] calldata _amounts
+        uint256 _amount
     )
         external
         nonReentrant
         whenNotPaused
     {
         if(msg.sender != refundAdmin) revert NotAdmin("refund admin");
-        if(_tos.length <= 0 || _tos.length != _amounts.length) revert InvalidArrayLength();
-        if(tokenStatus[_token] != TokenStatus.PreSale && tokenStatus[_token] != TokenStatus.Refund) revert InvalidTokenStatus(_token);
+        if(_tos.length <= 0) revert InvalidArrayLength();
+        if(tokenStatus[_token] != TokenStatus.Presale && tokenStatus[_token] != TokenStatus.Refund) revert InvalidTokenStatus(_token);
 
-        if (tokenStatus[_token] == TokenStatus.PreSale) tokenStatus[_token] = TokenStatus.Refund;
+        if (tokenStatus[_token] == TokenStatus.Presale) tokenStatus[_token] = TokenStatus.Refund;
         for (uint256 i = 0; i < _tos.length; i++) {
-            _refund(_token, _tos[i], _amounts[i]);
+            _refund(_token, _tos[i], _amount);
         }
     }
 
@@ -161,8 +160,8 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         if (refunded[_token][_to]) revert AlreadyRefunded(_to);
         refunded[_token][_to] = true;
 
-        fundingTokens[_token].safeTransfer(_to, _amount);
-        emit Refund(_token, _to, _amount);
+        fundingTokens[_token].safeTransferFrom(fundingCollectAddress, _to, _amount);
+        emit Refund(_token, fundingTokens[_token], _to, _amount);
     }
 
     //手动操作，收集手续费用

@@ -96,7 +96,7 @@
       }
     ],
     "outputs": [],
-    "stateMutability": "payable"
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -163,9 +163,9 @@
         "internalType": "address[]"
       },
       {
-        "name": "_amounts",
-        "type": "uint256[]",
-        "internalType": "uint256[]"
+        "name": "_amount",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [],
@@ -186,9 +186,9 @@
         "internalType": "address[]"
       },
       {
-        "name": "_amounts",
-        "type": "uint256[]",
-        "internalType": "uint256[]"
+        "name": "_amount",
+        "type": "uint256",
+        "internalType": "uint256"
       }
     ],
     "outputs": [],
@@ -256,7 +256,7 @@
       }
     ],
     "outputs": [],
-    "stateMutability": "payable"
+    "stateMutability": "nonpayable"
   },
   {
     "type": "function",
@@ -1221,6 +1221,12 @@
     "inputs": [
       {
         "name": "token",
+        "type": "address",
+        "indexed": true,
+        "internalType": "contract IERC20"
+      },
+      {
+        "name": "fundingToken",
         "type": "address",
         "indexed": true,
         "internalType": "contract IERC20"
