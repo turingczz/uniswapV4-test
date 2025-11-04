@@ -32,6 +32,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
     mapping(IERC20 => mapping(address => bool)) public airdropped; //to是否空投
     mapping(IERC20 => mapping(address => bool)) public refunded; //to是否退款
 
+    // Event definitions
     event Deploy(address msgSender, string symbol, IERC20 indexed token, uint256 timestamp, TokenParams p);
     event LiquidityAdded(address msgSender, IERC20 indexed token, uint256 lpTokenId, uint256 timestamp);
     event Airdropped(address sender, IERC20 indexed token, address indexed to, uint256 amount);

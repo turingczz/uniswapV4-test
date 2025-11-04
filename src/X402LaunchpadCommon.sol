@@ -157,11 +157,11 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
      * Payment token is used for swaps and airdrops
      * @param _account Address of the payment token
      */
-    function setUsdcReceiveAddress(address _account) public onlyOwner {
-        if (_account == address(0)) revert ZeroAddress("set usdcReceiveAddress");
-        address oldUsdcReceiveAddress = fundingCollectAddress;
+    function setFundingCollectAddress(address _account) public onlyOwner {
+        if (_account == address(0)) revert ZeroAddress("set fundingCollectAddress");
+        address oldFundingCollectAddress = fundingCollectAddress;
         fundingCollectAddress = _account;
-        emit UsdcReceiveAddressChanged(msg.sender, oldUsdcReceiveAddress, fundingCollectAddress);
+        emit FundingCollectAddressChanged(msg.sender, oldFundingCollectAddress, fundingCollectAddress);
     }
 
     /**
@@ -261,7 +261,6 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
     error PeriodExpired(uint32 period);
 
     // Event definitions
-    event DepositBtc(address indexed from, uint256 amount, uint256 blockNumber, uint256 blockTimestamp);
     event PauseAdminChanged(address adminSetter, address oldAddress, address newAddress);
     event PauseEvent(address adminSetter, bool paused);
 
@@ -270,10 +269,8 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
     event AddLiquidityAdminChanged(address adminSetter, address oldAddLiquidityAdmin, address newAddLiquidityAdmin);
     event AirdropAdminChanged(address adminSetter, address oldAirdropAdmin, address newAirdropAdmin);
     event RefundAdminChanged(address adminSetter, address oldRefundAdmin, address newRefundAdmin);
-    event UsdcReceiveAddressChanged(address adminSetter, address oldUsdcReceiveAddress, address newUsdcReceiveAddress);
-    event FeeToChanged(address adminSetter, address oldFeeTo, address newFeeTo);
+    event FundingCollectAddressChanged(address adminSetter, address oldFundingCollectAddress, address newFundingCollectAddress);
     event SwapFeeToChanged(address adminSetter, address oldSwapFeeTo, address newSwapFeeTo);
-    event FeeRateChanged(address adminSetter, uint256 oldFeeRate, uint256 newFeeRate);
     event SwapFeeRateChanged(address adminSetter, uint24 oldSwapFeeRate, uint24 newSwapFeeRate);
     event TokenAddLiquidityRateChanged(
         address adminSetter, uint256 oldTokenAddLiquidityRate, uint256 newTokenAddLiquidityRate
