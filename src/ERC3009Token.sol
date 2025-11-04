@@ -60,7 +60,7 @@ contract ERC3009Token is ERC20, ERC20Burnable, ERC20Capped, EIP712 {
         EIP712(name, "1")
     {
         _decimals = __decimals;
-        _mint(address(this), __cap);
+        _mint(msg.sender, __cap);
     }
 
     // -------------------------

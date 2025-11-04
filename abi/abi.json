@@ -87,6 +87,40 @@
   },
   {
     "type": "function",
+    "name": "_calculateSqrtPrices",
+    "inputs": [
+      {
+        "name": "fundingTokenAmount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "tokenAmount",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "fundingTokenIsToken0",
+        "type": "bool",
+        "internalType": "bool"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "sqrtPriceFundingTokenFirst",
+        "type": "uint160",
+        "internalType": "uint160"
+      },
+      {
+        "name": "sqrtPriceTokenFirst",
+        "type": "uint160",
+        "internalType": "uint160"
+      }
+    ],
+    "stateMutability": "pure"
+  },
+  {
+    "type": "function",
     "name": "addLiquidity",
     "inputs": [
       {

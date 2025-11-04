@@ -105,8 +105,8 @@ contract UniswapV4 {
         bytes memory actions = abi.encodePacked(uint8(Actions.MINT_POSITION), uint8(Actions.SETTLE_PAIR));
 
         // Transfer tokens from caller to contract first
-        IERC20(p.fundingToken).transferFrom(msg.sender, address(this), p.fundingTokenAmount);
-        IERC20(p.token).transferFrom(msg.sender, address(this), p.tokenAmount);
+//        IERC20(p.fundingToken).transferFrom(msg.sender, address(this), p.fundingTokenAmount);
+//        IERC20(p.token).transferFrom(msg.sender, address(this), p.tokenAmount);
 
         (uint128 amount0Max, uint128 amount1Max, uint128 liquidity) = _calculateMintParams(p, poolKey);
 
@@ -218,7 +218,7 @@ contract UniswapV4 {
         uint256 tokenAmount,
         bool fundingTokenIsToken0
     )
-        internal
+        public
         pure
         returns (uint160 sqrtPriceFundingTokenFirst, uint160 sqrtPriceTokenFirst)
     {
