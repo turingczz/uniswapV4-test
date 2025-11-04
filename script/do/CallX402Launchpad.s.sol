@@ -69,7 +69,7 @@ contract CallX402Launchpad is Script {
     
     // 部署的代币信息
     IERC20 deployedToken;
-    string tokenSymbol = "t3";
+    string tokenSymbol = "t30";
 
     function setUp() public {
         // 从.env文件读取私钥和代理合约地址
@@ -83,7 +83,8 @@ contract CallX402Launchpad is Script {
         x402Launchpad = X402Launchpad(proxyAddress);
 
         // 初始化测试配置
-        fundingToken = IERC20(0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238); // 使用已有的代币地址
+//        fundingToken = IERC20(0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238); // 使用已有的代币地址
+        fundingToken = IERC20(0x6fA6bA1c6F7F04D8c87eDcD7329bFe4cE68Ab5d7); // 使用已有的代币地址
         
         // 设置空投接收者列表
         airdropRecipients = new address[](3);
@@ -129,9 +130,9 @@ contract CallX402Launchpad is Script {
             "Test Token",     // _name
             tokenSymbol,      // _symbol
             18,               // _decimals
-            100e18,          // _cap (100 tokens)
+            1000000000000000000000000000,  // _cap (100 tokens)
             fundingToken,    // _fundingToken
-            1e4              // _fundingAmount (0.01 usdc funding tokens) 刚好 1w:1
+            20000000000      // _fundingAmount (0.01 usdc funding tokens) 刚好 1w:1
         );
 
         vm.stopBroadcast();
