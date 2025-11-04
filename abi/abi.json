@@ -21,10 +21,6 @@
     "stateMutability": "nonpayable"
   },
   {
-    "type": "receive",
-    "stateMutability": "payable"
-  },
-  {
     "type": "function",
     "name": "PERMIT2",
     "inputs": [],
@@ -200,7 +196,7 @@
   },
   {
     "type": "function",
-    "name": "collectFees",
+    "name": "collectSwapFees",
     "inputs": [
       {
         "name": "_token",
@@ -264,32 +260,6 @@
   },
   {
     "type": "function",
-    "name": "deployFeeRate",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "deployFeeTo",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "fundingAmounts",
     "inputs": [
       {
@@ -309,6 +279,19 @@
   },
   {
     "type": "function",
+    "name": "fundingCollectAddress",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "fundingTokens",
     "inputs": [
       {
@@ -322,91 +305,6 @@
         "name": "",
         "type": "address",
         "internalType": "contract IERC20"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "getFeeRateAmount",
-    "inputs": [
-      {
-        "name": "_amount",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "_feeRate",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "stateMutability": "pure"
-  },
-  {
-    "type": "function",
-    "name": "getTokenInfo",
-    "inputs": [
-      {
-        "name": "_token",
-        "type": "address",
-        "internalType": "contract IERC20"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "contract IERC20"
-      },
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "",
-        "type": "tuple",
-        "internalType": "struct X402Launchpad.PreSale",
-        "components": [
-          {
-            "name": "success",
-            "type": "bool",
-            "internalType": "bool"
-          },
-          {
-            "name": "addedLiquidity",
-            "type": "bool",
-            "internalType": "bool"
-          },
-          {
-            "name": "updateTimestamp",
-            "type": "uint256",
-            "internalType": "uint256"
-          }
-        ]
       }
     ],
     "stateMutability": "view"
@@ -436,12 +334,7 @@
         "internalType": "address"
       },
       {
-        "name": "_usdcReceiveAddress",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "_feeTo",
+        "name": "_fundingCollectAddress",
         "type": "address",
         "internalType": "address"
       },
@@ -511,37 +404,37 @@
     ],
     "outputs": [
       {
-        "name": "paymentToken",
+        "name": "fundingToken",
         "type": "address",
         "internalType": "address"
       },
       {
-        "name": "newToken",
+        "name": "token",
         "type": "address",
         "internalType": "address"
       },
       {
-        "name": "paymentTokenAmount",
+        "name": "fundingTokenAmount",
         "type": "uint256",
         "internalType": "uint256"
       },
       {
-        "name": "newTokenAmount",
+        "name": "tokenAmount",
         "type": "uint256",
         "internalType": "uint256"
       },
       {
-        "name": "sqrtPricePaymentTokenFirst",
+        "name": "sqrtPriceFundingTokenFirst",
         "type": "uint160",
         "internalType": "uint160"
       },
       {
-        "name": "sqrtPriceNewTokenFirst",
+        "name": "sqrtPriceTokenFirst",
         "type": "uint160",
         "internalType": "uint160"
       },
       {
-        "name": "paymentTokenIsToken0",
+        "name": "fundingTokenIsToken0",
         "type": "bool",
         "internalType": "bool"
       }
@@ -679,20 +572,7 @@
   },
   {
     "type": "function",
-    "name": "setDeployFeeRate",
-    "inputs": [
-      {
-        "name": "_rate",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "setDeployFeeTo",
+    "name": "setFundingCollectAddress",
     "inputs": [
       {
         "name": "_account",
@@ -770,19 +650,6 @@
   },
   {
     "type": "function",
-    "name": "setUsdcReceiveAddress",
-    "inputs": [
-      {
-        "name": "_account",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
     "name": "swapFeeRate",
     "inputs": [],
     "outputs": [
@@ -834,7 +701,7 @@
       {
         "name": "",
         "type": "uint8",
-        "internalType": "uint8"
+        "internalType": "enum X402Launchpad.TokenStatus"
       }
     ],
     "stateMutability": "view"
@@ -917,19 +784,6 @@
   },
   {
     "type": "function",
-    "name": "usdcReceiveAddress",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
     "name": "version",
     "inputs": [],
     "outputs": [
@@ -962,37 +816,6 @@
         "type": "address",
         "indexed": false,
         "internalType": "address"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "AddedLiquidity",
-    "inputs": [
-      {
-        "name": "msgSender",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      },
-      {
-        "name": "token",
-        "type": "address",
-        "indexed": true,
-        "internalType": "contract IERC20"
-      },
-      {
-        "name": "success",
-        "type": "bool",
-        "indexed": false,
-        "internalType": "bool"
-      },
-      {
-        "name": "timestamp",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -1055,31 +878,6 @@
   },
   {
     "type": "event",
-    "name": "CollectFees",
-    "inputs": [
-      {
-        "name": "_token",
-        "type": "address",
-        "indexed": true,
-        "internalType": "contract IERC20"
-      },
-      {
-        "name": "amount",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "volume",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
     "name": "CreateTokenAdminChanged",
     "inputs": [
       {
@@ -1105,7 +903,7 @@
   },
   {
     "type": "event",
-    "name": "CreateTokenAndCreatePool",
+    "name": "Deploy",
     "inputs": [
       {
         "name": "msgSender",
@@ -1114,7 +912,7 @@
         "internalType": "address"
       },
       {
-        "name": "_symbol",
+        "name": "symbol",
         "type": "string",
         "indexed": false,
         "internalType": "string"
@@ -1138,37 +936,37 @@
         "internalType": "struct UniswapV4.TokenParams",
         "components": [
           {
-            "name": "paymentToken",
+            "name": "fundingToken",
             "type": "address",
             "internalType": "address"
           },
           {
-            "name": "newToken",
+            "name": "token",
             "type": "address",
             "internalType": "address"
           },
           {
-            "name": "paymentTokenAmount",
+            "name": "fundingTokenAmount",
             "type": "uint256",
             "internalType": "uint256"
           },
           {
-            "name": "newTokenAmount",
+            "name": "tokenAmount",
             "type": "uint256",
             "internalType": "uint256"
           },
           {
-            "name": "sqrtPricePaymentTokenFirst",
+            "name": "sqrtPriceFundingTokenFirst",
             "type": "uint160",
             "internalType": "uint160"
           },
           {
-            "name": "sqrtPriceNewTokenFirst",
+            "name": "sqrtPriceTokenFirst",
             "type": "uint160",
             "internalType": "uint160"
           },
           {
-            "name": "paymentTokenIsToken0",
+            "name": "fundingTokenIsToken0",
             "type": "bool",
             "internalType": "bool"
           }
@@ -1179,7 +977,7 @@
   },
   {
     "type": "event",
-    "name": "DeployFeeRateChanged",
+    "name": "FundingCollectAddressChanged",
     "inputs": [
       {
         "name": "adminSetter",
@@ -1188,97 +986,16 @@
         "internalType": "address"
       },
       {
-        "name": "oldDeployFeeRate",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "newDeployFeeRate",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "DeployFeeToChanged",
-    "inputs": [
-      {
-        "name": "adminSetter",
+        "name": "oldFundingCollectAddress",
         "type": "address",
         "indexed": false,
         "internalType": "address"
       },
       {
-        "name": "oldDeployFeeTo",
+        "name": "newFundingCollectAddress",
         "type": "address",
         "indexed": false,
         "internalType": "address"
-      },
-      {
-        "name": "newDeployFeeTo",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "DepositBtc",
-    "inputs": [
-      {
-        "name": "from",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "amount",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "blockNumber",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "blockTimestamp",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "FeesCollected",
-    "inputs": [
-      {
-        "name": "recipient",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      },
-      {
-        "name": "amountToken0",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "amountToken1",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -1318,13 +1035,7 @@
         "internalType": "address"
       },
       {
-        "name": "paymentToken",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      },
-      {
-        "name": "feeTo",
+        "name": "fundingCollectAddress",
         "type": "address",
         "indexed": false,
         "internalType": "address"
@@ -1387,6 +1098,37 @@
         "type": "uint64",
         "indexed": false,
         "internalType": "uint64"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "LiquidityAdded",
+    "inputs": [
+      {
+        "name": "msgSender",
+        "type": "address",
+        "indexed": false,
+        "internalType": "address"
+      },
+      {
+        "name": "token",
+        "type": "address",
+        "indexed": true,
+        "internalType": "contract IERC20"
+      },
+      {
+        "name": "lpTokenId",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "timestamp",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
       }
     ],
     "anonymous": false
@@ -1490,13 +1232,7 @@
         "internalType": "address"
       },
       {
-        "name": "fee",
-        "type": "uint256",
-        "indexed": false,
-        "internalType": "uint256"
-      },
-      {
-        "name": "refundAmount",
+        "name": "amount",
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
@@ -1581,6 +1317,31 @@
   },
   {
     "type": "event",
+    "name": "SwapFeesCollected",
+    "inputs": [
+      {
+        "name": "_token",
+        "type": "address",
+        "indexed": true,
+        "internalType": "contract IERC20"
+      },
+      {
+        "name": "fundingSwapFee",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "tokenSwapFee",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
     "name": "TokenAddLiquidityRateChanged",
     "inputs": [
       {
@@ -1618,31 +1379,6 @@
     "anonymous": false
   },
   {
-    "type": "event",
-    "name": "UsdcReceiveAddressChanged",
-    "inputs": [
-      {
-        "name": "adminSetter",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      },
-      {
-        "name": "oldUsdcReceiveAddress",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      },
-      {
-        "name": "newUsdcReceiveAddress",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      }
-    ],
-    "anonymous": false
-  },
-  {
     "type": "error",
     "name": "AddressEmptyCode",
     "inputs": [
@@ -1666,26 +1402,26 @@
   },
   {
     "type": "error",
+    "name": "AlreadyAirdropped",
+    "inputs": [
+      {
+        "name": "account",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
     "name": "AlreadyPaused",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "AlreadyUnstakedItem",
+    "name": "AlreadyRefunded",
     "inputs": [
       {
-        "name": "id",
-        "type": "uint32",
-        "internalType": "uint32"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "AlreadyWithdrawRewards",
-    "inputs": [
-      {
-        "name": "staker",
+        "name": "account",
         "type": "address",
         "internalType": "address"
       }
@@ -1693,39 +1429,12 @@
   },
   {
     "type": "error",
-    "name": "AlreadyWithdrawn",
+    "name": "AlreadyTokenExists",
     "inputs": [
       {
-        "name": "id",
-        "type": "uint32",
-        "internalType": "uint32"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "CanNotMigrate",
-    "inputs": [
-      {
-        "name": "period",
-        "type": "uint32",
-        "internalType": "uint32"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "DirectTransferRejected",
-    "inputs": [
-      {
-        "name": "period",
-        "type": "uint32",
-        "internalType": "uint32"
-      },
-      {
-        "name": "caller",
-        "type": "address",
-        "internalType": "address"
+        "name": "symbol",
+        "type": "string",
+        "internalType": "string"
       }
     ]
   },
@@ -1747,17 +1456,6 @@
   },
   {
     "type": "error",
-    "name": "ExistStakingItem",
-    "inputs": [
-      {
-        "name": "id",
-        "type": "uint32",
-        "internalType": "uint32"
-      }
-    ]
-  },
-  {
-    "type": "error",
     "name": "FailedInnerCall",
     "inputs": []
   },
@@ -1774,39 +1472,28 @@
   },
   {
     "type": "error",
-    "name": "InsufficientAmount",
-    "inputs": [
-      {
-        "name": "id",
-        "type": "uint32",
-        "internalType": "uint32"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "InsufficientRewardsAmount",
-    "inputs": [
-      {
-        "name": "id",
-        "type": "uint32",
-        "internalType": "uint32"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "InvalidAmount",
-    "inputs": []
-  },
-  {
-    "type": "error",
     "name": "InvalidArrayLength",
     "inputs": []
   },
   {
     "type": "error",
-    "name": "InvalidEndTime",
+    "name": "InvalidInitialization",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InvalidTokenStatus",
+    "inputs": [
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "contract IERC20"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "NotAdmin",
     "inputs": [
       {
         "name": "msg",
@@ -1817,87 +1504,7 @@
   },
   {
     "type": "error",
-    "name": "InvalidInitialization",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "InvalidMigrateCaller",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "InvalidMigrateId",
-    "inputs": [
-      {
-        "name": "id",
-        "type": "uint32",
-        "internalType": "uint32"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "InvalidMigratePeriod",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "InvalidPeriod",
-    "inputs": [
-      {
-        "name": "period",
-        "type": "uint32",
-        "internalType": "uint32"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "InvalidSpecialCaller",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "NotDueYetItem",
-    "inputs": [
-      {
-        "name": "id",
-        "type": "uint32",
-        "internalType": "uint32"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "NotExistNextItem",
-    "inputs": [
-      {
-        "name": "id",
-        "type": "uint32",
-        "internalType": "uint32"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "NotFoundStakingItem",
-    "inputs": [
-      {
-        "name": "id",
-        "type": "uint32",
-        "internalType": "uint32"
-      }
-    ]
-  },
-  {
-    "type": "error",
     "name": "NotInitializing",
-    "inputs": []
-  },
-  {
-    "type": "error",
-    "name": "OverStakeCap",
     "inputs": []
   },
   {
@@ -1919,39 +1526,6 @@
         "name": "account",
         "type": "address",
         "internalType": "address"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "PeriodExpired",
-    "inputs": [
-      {
-        "name": "period",
-        "type": "uint32",
-        "internalType": "uint32"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "PeriodNotStake",
-    "inputs": [
-      {
-        "name": "period",
-        "type": "uint32",
-        "internalType": "uint32"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "PeriodNotStart",
-    "inputs": [
-      {
-        "name": "period",
-        "type": "uint32",
-        "internalType": "uint32"
       }
     ]
   },
@@ -1989,11 +1563,6 @@
   },
   {
     "type": "error",
-    "name": "StakePaused",
-    "inputs": []
-  },
-  {
-    "type": "error",
     "name": "UUPSUnauthorizedCallContext",
     "inputs": []
   },
@@ -2005,17 +1574,6 @@
         "name": "slot",
         "type": "bytes32",
         "internalType": "bytes32"
-      }
-    ]
-  },
-  {
-    "type": "error",
-    "name": "UnsetPeriodApr",
-    "inputs": [
-      {
-        "name": "period",
-        "type": "uint32",
-        "internalType": "uint32"
       }
     ]
   },

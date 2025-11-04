@@ -24,12 +24,12 @@ contract DeployScript is Script {
 }
 
 /* 部署命令:
-forge script script/DeployLogicX402.sol:DeployScript \
+forge script script/DeployLogic.sol:DeployScript \
     --rpc-url=sepolia \
     --broadcast \
     --legacy
 
-forge script script/DeployLogicX402.sol:DeployScript \
+forge script script/DeployLogic.sol:DeployScript \
     --rpc-url=base \
     --broadcast \
     --legacy --verify
