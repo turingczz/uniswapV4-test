@@ -36,10 +36,6 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
         _nonReentrantStatus = 0;
     }
 
-    receive() external payable {
-        emit DepositBtc(msg.sender, msg.value, block.number, block.timestamp);
-    }
-
     /**
      * @dev Authorizes the upgrade of the contract
      * Only the contract owner can authorize upgrades (UUPS pattern)
