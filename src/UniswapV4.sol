@@ -17,6 +17,7 @@ import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import { IPoolManager } from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import { IAllowanceTransfer } from "permit2/src/interfaces/IAllowanceTransfer.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/utils/math/Math.sol";
 
 contract UniswapV4 {
     struct TokenParams {
@@ -104,9 +105,9 @@ contract UniswapV4 {
         // Prepare mint actions payload
         bytes memory actions = abi.encodePacked(uint8(Actions.MINT_POSITION), uint8(Actions.SETTLE_PAIR));
 
-        // Transfer tokens from caller to contract first
-//        IERC20(p.fundingToken).transferFrom(msg.sender, address(this), p.fundingTokenAmount);
-//        IERC20(p.token).transferFrom(msg.sender, address(this), p.tokenAmount);
+        // funding token already transfer to contract, and token is in contract too.
+        //IERC20(p.fundingToken).transferFrom(msg.sender, address(this), p.fundingTokenAmount);
+        //IERC20(p.token).transferFrom(msg.sender, address(this), p.tokenAmount);
 
         (uint128 amount0Max, uint128 amount1Max, uint128 liquidity) = _calculateMintParams(p, poolKey);
 
@@ -218,26 +219,81 @@ contract UniswapV4 {
         uint256 tokenAmount,
         bool fundingTokenIsToken0
     )
-        public
-        pure
-        returns (uint160 sqrtPriceFundingTokenFirst, uint160 sqrtPriceTokenFirst)
+    public
+    pure
+    returns (uint160 sqrtPriceFundingTokenFirst, uint160 sqrtPriceTokenFirst)
     {
         if (fundingTokenAmount == 0 || tokenAmount == 0) revert("Amounts must be positive");
 
         if (fundingTokenIsToken0) {
-            // fundingToken是token0，token是token1
-            // price = (tokenAmount * 2^96) / fundingTokenAmount
-            sqrtPriceFundingTokenFirst = uint160((uint256(tokenAmount) << 96) / fundingTokenAmount);
-            
-            // Reverse price = (fundingTokenAmount * 2^96) / tokenAmount
-            sqrtPriceTokenFirst = uint160((uint256(fundingTokenAmount) << 96) / tokenAmount);
+            // [IF 块] fundingToken是token0 (T0)，token是token1 (T1)
+
+            // sqrtPriceFundingTokenFirst (T0 优先): P = T1/T0
+            sqrtPriceFundingTokenFirst = encodePriceSqrt(tokenAmount, fundingTokenAmount);
+            // 期望返回值792...就是这个值 (如果 T0 是 199... 且 T1 是 200...)
+
+            // sqrtPriceTokenFirst (T1 优先): P = T0/T1
+            sqrtPriceTokenFirst = encodePriceSqrt(fundingTokenAmount, tokenAmount);
         } else {
-            // token是token0，fundingToken是token1
-            // price = (fundingTokenAmount * 2^96) / tokenAmount
-            sqrtPriceTokenFirst = uint160((uint256(fundingTokenAmount) << 96) / tokenAmount);
-            
-            // Reverse price = (tokenAmount * 2^96) / fundingTokenAmount
-            sqrtPriceFundingTokenFirst = uint160((uint256(tokenAmount) << 96) / fundingTokenAmount);
+            // [ELSE 块] token是token0 (T0)，fundingToken是token1 (T1)
+
+            // sqrtPriceTokenFirst (T0 优先): P = T1/T0
+            sqrtPriceTokenFirst = encodePriceSqrt(fundingTokenAmount, tokenAmount);
+
+            // sqrtPriceFundingTokenFirst (T1 优先): P = T0/T1
+            sqrtPriceFundingTokenFirst = encodePriceSqrt(tokenAmount, fundingTokenAmount); // <-- 修正：赋值给 sqrtPriceFundingTokenFirst
         }
+    }
+
+    function encodePriceSqrt(uint256 reserve1, uint256 reserve0)
+    internal
+    pure
+    returns (uint160)
+    {
+        if (reserve0 == 0) revert("Reserve0 must be positive");
+
+        // 关键修正：使用 Q128.128 格式进行安全计算
+        // 我们需要计算 sqrt(reserve1 / reserve0 * 2**192)
+        // 等价于 sqrt(reserve1 * (2**128 / reserve0) * 2**64)
+
+        // 1. 计算 (reserve1 * 2**128) / reserve0
+        // 将 reserve1 扩大 2**128 倍
+        uint256 ratioX128 = (reserve1 * (1 << 128)) / reserve0;
+
+        // 2. 将 ratioX128 再次扩大 2**64 倍，得到 Q192.64 格式
+        // 注意：我们将原本的 Q64.96 改为 Q192.64 来避免溢出，
+        // 但是这里需要保证 final sqrt(ratio) 的格式是 Q64.96，所以需要调整。
+
+        // 标准 V3/V4 技巧：
+        // V3/V4 的价格是 Q64.96，价格平方是 Q128.192，再除以 2^96 得到 Q128.96 的平方。
+        // 我们需要计算 sqrt( (reserve1 / reserve0) * 2^192 )
+
+        // 方法：先计算 Q96 比例，再计算 Q192 比例
+        uint256 ratioX96 = (reserve1 << 96) / reserve0;
+
+        // ratioX96 是 Q0.96 格式的价格
+        // ratioX192 = ratioX96 * 2^96 = ratioX96 << 96
+
+        // 检查 reserve1 << 96 是否溢出：
+        // reserve1 ≈ 2 * 10^26。 2^96 ≈ 8 * 10^28。 乘积 ≈ 1.6 * 10^55。
+        // 不会溢出 uint256。 因此，我们可以安全地使用 Q192 格式。
+
+        uint256 ratioX192;
+        if (reserve1 > 0) {
+            // 避免 reserve1 << 192 直接溢出
+            // 拆分为： reserve1 * (2^96) * (2^96) / reserve0
+            // 即： ( (reserve1 << 96) / reserve0 ) << 96
+
+            // 步骤 A: 计算 Q96 比例
+            ratioX96 = (reserve1 << 96) / reserve0;
+
+            // 步骤 B: 转换为 Q192 比例
+            ratioX192 = ratioX96 << 96;
+
+        } else {
+            ratioX192 = 0;
+        }
+
+        return uint160(Math.sqrt(ratioX192));
     }
 }

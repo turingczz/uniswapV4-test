@@ -85,7 +85,8 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         });
         (p.sqrtPriceFundingTokenFirst, p.sqrtPriceTokenFirst) =
             _calculateSqrtPrices(fundingTokenAddLiquidity, tokenAddLiquidity, fundingTokenIsToken0);
-        _initializePool(p, uint24(swapFeeRate), 200);
+
+        _initializePool(p, uint24(swapFeeRate), 60);
         emit Deploy(msg.sender, _symbol, token, block.timestamp, p);
 
         tokens[_symbol] = token;
@@ -103,7 +104,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         tokenStatus[_token] = TokenStatus.AddedLiquidity;
 
         fundingTokens[_token].safeTransferFrom(fundingCollectAddress, address(this), p.fundingTokenAmount);
-        lpTokenIds[_token] = _deployLiquidity(p, swapFeeRate, 200);
+        lpTokenIds[_token] = _deployLiquidity(p, swapFeeRate, 60);
         emit LiquidityAdded(msg.sender, _token, lpTokenIds[_token], block.timestamp);
     }
 

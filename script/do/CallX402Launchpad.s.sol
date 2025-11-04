@@ -149,7 +149,7 @@ contract CallX402Launchpad is Script {
     function step3_AddLiquidity() public {
         console.log("\n=== Step 3: Add Liquidity ===");
 
-        deployedToken = IERC20(0xC64820c15e7Fb4860e3Fd07D33cc6694678F79C0);
+        deployedToken = IERC20(0xeA282c1fEC0cB7466E1D2833f05fbd88f1349F44);
         if (address(deployedToken) == address(0)) {
             console.log("ERROR: No token deployed yet. Run step2_DeployToken first.");
             return;
