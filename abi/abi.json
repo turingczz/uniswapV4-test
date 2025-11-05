@@ -22,6 +22,45 @@
   },
   {
     "type": "function",
+    "name": "DEFAULT_SWAP_FEE_RATE",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint24",
+        "internalType": "uint24"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "DEFAULT_TICK_SPACING",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "int24",
+        "internalType": "int24"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "DEFAULT_TOKEN_ADD_LIQUIDITY_RATE",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint32",
+        "internalType": "uint32"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "PERMIT2",
     "inputs": [],
     "outputs": [
@@ -220,9 +259,9 @@
         "internalType": "address[]"
       },
       {
-        "name": "_amount",
-        "type": "uint256",
-        "internalType": "uint256"
+        "name": "_amounts",
+        "type": "uint256[]",
+        "internalType": "uint256[]"
       }
     ],
     "outputs": [],
@@ -651,6 +690,11 @@
         "name": "_rate",
         "type": "uint24",
         "internalType": "uint24"
+      },
+      {
+        "name": "_tickSpacing",
+        "type": "int24",
+        "internalType": "int24"
       }
     ],
     "outputs": [],
@@ -675,8 +719,8 @@
     "inputs": [
       {
         "name": "_rate",
-        "type": "uint256",
-        "internalType": "uint256"
+        "type": "uint32",
+        "internalType": "uint32"
       }
     ],
     "outputs": [],
@@ -710,13 +754,26 @@
   },
   {
     "type": "function",
+    "name": "tickSpacing",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "",
+        "type": "int24",
+        "internalType": "int24"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "tokenAddLiquidityRate",
     "inputs": [],
     "outputs": [
       {
         "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
+        "type": "uint32",
+        "internalType": "uint32"
       }
     ],
     "stateMutability": "view"
@@ -1163,6 +1220,49 @@
         "type": "uint256",
         "indexed": false,
         "internalType": "uint256"
+      },
+      {
+        "name": "p",
+        "type": "tuple",
+        "indexed": false,
+        "internalType": "struct UniswapV4.TokenParams",
+        "components": [
+          {
+            "name": "fundingToken",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "token",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "fundingTokenAmount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "tokenAmount",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "sqrtPriceFundingTokenFirst",
+            "type": "uint160",
+            "internalType": "uint160"
+          },
+          {
+            "name": "sqrtPriceTokenFirst",
+            "type": "uint160",
+            "internalType": "uint160"
+          },
+          {
+            "name": "fundingTokenIsToken0",
+            "type": "bool",
+            "internalType": "bool"
+          }
+        ]
       }
     ],
     "anonymous": false
@@ -1326,6 +1426,18 @@
         "type": "uint24",
         "indexed": false,
         "internalType": "uint24"
+      },
+      {
+        "name": "oldTickSpacing",
+        "type": "int24",
+        "indexed": false,
+        "internalType": "int24"
+      },
+      {
+        "name": "newTickSpacing",
+        "type": "int24",
+        "indexed": false,
+        "internalType": "int24"
       }
     ],
     "anonymous": false
@@ -1392,15 +1504,15 @@
       },
       {
         "name": "oldTokenAddLiquidityRate",
-        "type": "uint256",
+        "type": "uint32",
         "indexed": false,
-        "internalType": "uint256"
+        "internalType": "uint32"
       },
       {
         "name": "newTokenAddLiquidityRate",
-        "type": "uint256",
+        "type": "uint32",
         "indexed": false,
-        "internalType": "uint256"
+        "internalType": "uint32"
       }
     ],
     "anonymous": false
@@ -1539,6 +1651,17 @@
         "name": "msg",
         "type": "string",
         "internalType": "string"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "NotExistToken",
+    "inputs": [
+      {
+        "name": "token",
+        "type": "address",
+        "internalType": "contract IERC20"
       }
     ]
   },
