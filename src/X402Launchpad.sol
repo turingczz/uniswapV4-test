@@ -42,7 +42,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
 
     // Event definitions
     event Deploy(address msgSender, string symbol, IERC20 indexed token, uint256 timestamp, TokenParams p);
-    event LiquidityAdded(address msgSender, IERC20 indexed token, uint256 lpTokenId, uint256 timestamp);
+    event LiquidityAdded(address msgSender, IERC20 indexed token, uint256 lpTokenId, uint256 timestamp, TokenParams p);
     event Airdropped(address sender, IERC20 indexed token, address indexed to, uint256 amount);
     event Refund(IERC20 indexed token, IERC20 indexed fundingToken, address indexed to, uint256 amount);
     event SwapFeesCollected(IERC20 indexed _token, uint256 fundingSwapFee, uint256 tokenSwapFee);
@@ -97,8 +97,8 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         whenNotPaused
         onlyCreateTokenAdmin
     {
-        if(_cap <= 0) revert ZeroValue("cap");
-        if(_fundingAmount <= 0) revert ZeroValue("fundingAmount");
+        if(_cap == 0) revert ZeroValue("cap");
+        if(_fundingAmount == 0) revert ZeroValue("fundingAmount");
         if(tokens[_symbol] != IERC20(address(0))) revert AlreadyTokenExists(_symbol);
 
         IERC20 token = IERC20(new ERC3009Token(_name, _symbol, _cap, _decimals));
@@ -146,7 +146,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
 
         fundingTokens[_token].safeTransferFrom(fundingCollectAddress, address(this), p.fundingTokenAmount);
         lpTokenIds[_token] = _deployLiquidity(p, swapFeeRate, tickSpacing);
-        emit LiquidityAdded(msg.sender, _token, lpTokenIds[_token], block.timestamp);
+        emit LiquidityAdded(msg.sender, _token, lpTokenIds[_token], block.timestamp, p);
     }
 
     /**
@@ -208,7 +208,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         whenNotPaused
         onlyRefundAdmin
     {
-        if(_tos.length <= 0 || _tos.length != _amounts.length) revert InvalidArrayLength();
+        if(_tos.length == 0 || _tos.length != _amounts.length) revert InvalidArrayLength();
         if(tokenStatus[_token] != TokenStatus.Presale && tokenStatus[_token] != TokenStatus.Refund) revert InvalidTokenStatus(_token);
 
         if (tokenStatus[_token] == TokenStatus.Presale) tokenStatus[_token] = TokenStatus.Refund;

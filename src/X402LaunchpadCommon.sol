@@ -19,7 +19,6 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
     int24 public constant DEFAULT_TICK_SPACING = 60; //with 0.3%
     uint32 public constant DEFAULT_TOKEN_ADD_LIQUIDITY_RATE = 200_000; // 20%
 
-
     uint8 private _nonReentrantStatus;
     bool public paused;
     address public pauseAdmin;
