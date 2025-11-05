@@ -97,7 +97,8 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         whenNotPaused
         onlyCreateTokenAdmin
     {
-        if(_cap <= 0 || _fundingAmount <= 0) revert ZeroValue("Invalid cap, fundingAmount");
+        if(_cap <= 0) revert ZeroValue("cap");
+        if(_fundingAmount <= 0) revert ZeroValue("fundingAmount");
         if(tokens[_symbol] != IERC20(address(0))) revert AlreadyTokenExists(_symbol);
 
         IERC20 token = IERC20(new ERC3009Token(_name, _symbol, _cap, _decimals));
@@ -117,7 +118,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         (p.sqrtPriceFundingTokenFirst, p.sqrtPriceTokenFirst) =
             _calculateSqrtPrices(fundingTokenAddLiquidity, tokenAddLiquidity, fundingTokenIsToken0);
 
-        _initializePool(p, uint24(swapFeeRate), 60);
+        _initializePool(p, uint24(swapFeeRate), tickSpacing);
         emit Deploy(msg.sender, _symbol, token, block.timestamp, p);
 
         tokens[_symbol] = token;
@@ -144,7 +145,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         tokenStatus[_token] = TokenStatus.AddedLiquidity;
 
         fundingTokens[_token].safeTransferFrom(fundingCollectAddress, address(this), p.fundingTokenAmount);
-        lpTokenIds[_token] = _deployLiquidity(p, swapFeeRate, 60);
+        lpTokenIds[_token] = _deployLiquidity(p, swapFeeRate, tickSpacing);
         emit LiquidityAdded(msg.sender, _token, lpTokenIds[_token], block.timestamp);
     }
 

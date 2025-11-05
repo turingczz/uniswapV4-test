@@ -16,7 +16,7 @@ import {stdError} from "forge-std/StdError.sol";
 contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
     uint256 public constant SCALE_FACTOR = 1e6;
     uint24 public constant DEFAULT_SWAP_FEE_RATE = 3000; // 0.3%
-    uint24 public constant TICK_SPACING = 60;
+    int24 public constant DEFAULT_TICK_SPACING = 60; //with 0.3%
     uint32 public constant DEFAULT_TOKEN_ADD_LIQUIDITY_RATE = 200_000; // 20%
 
 
@@ -31,6 +31,7 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
     address public fundingCollectAddress;
     address public swapFeeTo;
     uint24 public swapFeeRate; //default 3000 0.3%
+    int24 public tickSpacing;
     uint32 public tokenAddLiquidityRate; //default 200000 20%
 
     uint256[50] __commGap;
@@ -117,6 +118,7 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
         fundingCollectAddress = _fundingCollectAddress;
         swapFeeTo = _swapFeeTo;
         swapFeeRate = DEFAULT_SWAP_FEE_RATE; //default 0.3%
+        tickSpacing = DEFAULT_TICK_SPACING; //default for 0.3%
         tokenAddLiquidityRate = DEFAULT_TOKEN_ADD_LIQUIDITY_RATE; //default 20%
 
         emit InitConfig(
@@ -207,10 +209,15 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
      * Swap fee rate is expressed in basis points (1e6 = 100%)
      * @param _rate Swap fee rate in basis points
      */
-    function setSwapFeeRate(uint24 _rate) public onlyOwner {
+    function setSwapFeeRate(uint24 _rate, int24 _tickSpacing) public onlyOwner {
+        if (_rate == 0) revert ZeroValue("rate");
+        if (_tickSpacing == 0) revert ZeroValue("tickSpacing");
+
         uint24 oldSwapFeeRate = swapFeeRate;
+        int24 oldTickSpacing = tickSpacing;
         swapFeeRate = _rate;
-        emit SwapFeeRateChanged(msg.sender, oldSwapFeeRate, swapFeeRate);
+        tickSpacing = _tickSpacing;
+        emit SwapFeeRateChanged(msg.sender, oldSwapFeeRate, swapFeeRate, oldTickSpacing, tickSpacing);
     }
 
     /**
@@ -219,6 +226,7 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
      * @param _rate Token add liquidity rate in basis points
      */
     function setTokenAddLiquidityRate(uint32 _rate) public onlyOwner {
+        if (_rate == 0) revert ZeroValue("rate");
         uint32 oldTokenAddLiquidityRate = tokenAddLiquidityRate;
         tokenAddLiquidityRate = _rate;
         emit TokenAddLiquidityRateChanged(msg.sender, oldTokenAddLiquidityRate, tokenAddLiquidityRate);
@@ -278,7 +286,7 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
     event RefundAdminChanged(address adminSetter, address oldRefundAdmin, address newRefundAdmin);
     event FundingCollectAddressChanged(address adminSetter, address oldFundingCollectAddress, address newFundingCollectAddress);
     event SwapFeeToChanged(address adminSetter, address oldSwapFeeTo, address newSwapFeeTo);
-    event SwapFeeRateChanged(address adminSetter, uint24 oldSwapFeeRate, uint24 newSwapFeeRate);
+    event SwapFeeRateChanged(address adminSetter, uint24 oldSwapFeeRate, uint24 newSwapFeeRate, int24 oldTickSpacing, int24 newTickSpacing);
     event TokenAddLiquidityRateChanged(
         address adminSetter, uint32 oldTokenAddLiquidityRate, uint32 newTokenAddLiquidityRate
     );
