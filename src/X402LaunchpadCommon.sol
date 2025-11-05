@@ -265,6 +265,7 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
     error ZeroAddress(string msg);
     error ZeroValue(string msg);
     error NotAdmin(string msg);
+    error NotExistToken(IERC20 token);
     error AlreadyTokenExists(string symbol);
     error AlreadyAirdropped(address account);
     error AlreadyRefunded(address account);

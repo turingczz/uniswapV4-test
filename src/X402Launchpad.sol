@@ -140,6 +140,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         whenNotPaused
         onlyAddLiquidityAdmin
     {
+        if(tokenSupplies[_token] == 0) revert NotExistToken(_token);
         if(tokenStatus[_token] != TokenStatus.Presale) revert InvalidTokenStatus(_token);
         TokenParams storage p = params[_token];
         tokenStatus[_token] = TokenStatus.AddedLiquidity;
@@ -208,6 +209,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         whenNotPaused
         onlyRefundAdmin
     {
+        if(tokenSupplies[_token] == 0) revert NotExistToken(_token);
         if(_tos.length == 0 || _tos.length != _amounts.length) revert InvalidArrayLength();
         if(tokenStatus[_token] != TokenStatus.Presale && tokenStatus[_token] != TokenStatus.Refund) revert InvalidTokenStatus(_token);
 
@@ -237,7 +239,6 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
      * @param _token Address of the token to collect fees for
      */
     function collectSwapFees(IERC20 _token) external nonReentrant {
-        if(address(_token) == address(0)) revert ZeroAddress("token");
         uint256 lpTokenId = lpTokenIds[_token];
         if(lpTokenId == 0) revert ZeroValue("lpTokenId");
 
