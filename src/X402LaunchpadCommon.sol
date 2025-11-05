@@ -2,10 +2,10 @@
 pragma solidity 0.8.28;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { AccessControlUpgradeable } from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import { OwnableUpgradeable } from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import { UUPSUpgradeable } from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import {stdError} from "forge-std/StdError.sol";
 
 /**
  * @title X402LaunchpadCommon
@@ -13,7 +13,11 @@ import {stdError} from "forge-std/StdError.sol";
  * Provides common launchpad logic, admin management, pause controls, and upgradeability
  * This contract is designed to be inherited by the main X402Launchpad contract
  */
-contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
+contract X402LaunchpadCommon is AccessControlUpgradeable, OwnableUpgradeable, UUPSUpgradeable {
+    bytes32 public constant CREATE_TOKEN_ROLE = keccak256("CREATE_TOKEN_ROLE");
+    bytes32 public constant ADD_LIQUIDITY_ROLE = keccak256("ADD_LIQUIDITY_ROLE");
+    bytes32 public constant AIRDROP_ADMIN_ROLE = keccak256("AIRDROP_ADMIN_ROLE");
+    bytes32 public constant REFUND_ADMIN_ROLE = keccak256("REFUND_ADMIN_ROLE");
     uint256 public constant SCALE_FACTOR = 1e6;
     uint24 public constant DEFAULT_SWAP_FEE_RATE = 3000; // 0.3%
     int24 public constant DEFAULT_TICK_SPACING = 60; //with 0.3%
@@ -42,26 +46,6 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
         _nonReentrantStatus = 0;
     }
 
-    modifier onlyCreateTokenAdmin() {
-        if(msg.sender != createTokenAdmin) revert NotAdmin("create token admin");
-        _;
-    }
-
-    modifier onlyAddLiquidityAdmin() {
-        if(msg.sender != addLiquidityAdmin) revert NotAdmin("add liquidity admin");
-        _;
-    }
-
-    modifier onlyAirdropAdmin() {
-        if(msg.sender != airdropAdmin) revert NotAdmin("airdrop admin");
-        _;
-    }
-
-    modifier onlyRefundAdmin() {
-        if(msg.sender != refundAdmin) revert NotAdmin("refund admin");
-        _;
-    }
-
     /**
      * @dev Authorizes the upgrade of the contract
      * Only the contract owner can authorize upgrades (UUPS pattern)
@@ -78,6 +62,7 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
      */
     function initialize(address _initialOwner) public virtual initializer {
         if (_initialOwner == address(0)) revert ZeroAddress("init owner");
+        __AccessControl_init();
         __Ownable_init_unchained(_initialOwner);
         __UUPSUpgradeable_init();
     }
@@ -110,10 +95,10 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
         if (_fundingCollectAddress == address(0)) revert ZeroAddress("funding collect address");
         if (_swapFeeTo == address(0)) revert ZeroAddress("swap fee to");
 
-        createTokenAdmin = _createTokenAdmin;
-        addLiquidityAdmin = _addLiquidityAdmin;
-        airdropAdmin = _airdropAdmin;
-        refundAdmin = _refundAdmin;
+        _grantRole(CREATE_TOKEN_ROLE, _createTokenAdmin);
+        _grantRole(ADD_LIQUIDITY_ROLE, _addLiquidityAdmin);
+        _grantRole(AIRDROP_ADMIN_ROLE, _airdropAdmin);
+        _grantRole(REFUND_ADMIN_ROLE, _refundAdmin);
         fundingCollectAddress = _fundingCollectAddress;
         swapFeeTo = _swapFeeTo;
         swapFeeRate = DEFAULT_SWAP_FEE_RATE; //default 0.3%
@@ -129,54 +114,6 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
             _fundingCollectAddress,
             _swapFeeTo
         );
-    }
-
-    /**
-     * @dev Sets the token admin address
-     * Token admin can create tokens and pools
-     * @param _account Address of the token admin
-     */
-    function setCreateTokenAdmin(address _account) public onlyOwner {
-        if (_account == address(0)) revert ZeroAddress("set createTokenAdmin");
-        address oldCreateTokenAdmin = createTokenAdmin;
-        createTokenAdmin = _account;
-        emit CreateTokenAdminChanged(msg.sender, oldCreateTokenAdmin, createTokenAdmin);
-    }
-
-    /**
-     * @dev Sets the add liquidity admin address
-     * Add liquidity admin can add liquidity to pools
-     * @param _account Address of the add liquidity admin
-     */
-    function setAddLiquidityAdmin(address _account) public onlyOwner {
-        if (_account == address(0)) revert ZeroAddress("set addLiquidityAdmin");
-        address oldAddLiquidityAdmin = addLiquidityAdmin;
-        addLiquidityAdmin = _account;
-        emit AddLiquidityAdminChanged(msg.sender, oldAddLiquidityAdmin, addLiquidityAdmin);
-    }
-
-    /**
-     * @dev Sets the airdrop admin address
-     * Airdrop admin can perform airdrop operations
-     * @param _account Address of the airdrop admin
-     */
-    function setAirdropAdmin(address _account) public onlyOwner {
-        if (_account == address(0)) revert ZeroAddress("set airdropAdmin");
-        address oldAirdropAdmin = airdropAdmin;
-        airdropAdmin = _account;
-        emit AirdropAdminChanged(msg.sender, oldAirdropAdmin, airdropAdmin);
-    }
-
-    /**
-     * @dev Sets the refund admin address
-     * Refund admin can perform refund operations
-     * @param _account Address of the refund admin
-     */
-    function setRefundAdmin(address _account) public onlyOwner {
-        if (_account == address(0)) revert ZeroAddress("set refundAdmin");
-        address oldRefundAdmin = refundAdmin;
-        refundAdmin = _account;
-        emit RefundAdminChanged(msg.sender, oldRefundAdmin, refundAdmin);
     }
 
     /**

@@ -22,10 +22,10 @@ contract TestX402LaunchpadScript is Script {
         // 由于合约部署时部署者自动成为所有者，我们可以直接设置管理员配置
         
         // 设置合约配置
-        launchpad.setCreateTokenAdmin(deployer);
-        launchpad.setAddLiquidityAdmin(deployer);
-        launchpad.setAirdropAdmin(deployer);
-        launchpad.setRefundAdmin(deployer);
+        launchpad.grantRole(launchpad.CREATE_TOKEN_ROLE(), deployer);
+        launchpad.grantRole(launchpad.ADD_LIQUIDITY_ROLE(), deployer);
+        launchpad.grantRole(launchpad.AIRDROP_ADMIN_ROLE(), deployer);
+        launchpad.grantRole(launchpad.REFUND_ADMIN_ROLE(), deployer);
         launchpad.setSwapFeeTo(deployer);
         vm.stopBroadcast();
     }

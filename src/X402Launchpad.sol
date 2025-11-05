@@ -95,7 +95,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         external
         nonReentrant
         whenNotPaused
-        onlyCreateTokenAdmin
+        onlyRole(CREATE_TOKEN_ROLE)
     {
         if(_cap == 0) revert ZeroValue("cap");
         if(_fundingAmount == 0) revert ZeroValue("fundingAmount");
@@ -138,7 +138,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         external
         nonReentrant
         whenNotPaused
-        onlyAddLiquidityAdmin
+        onlyRole(ADD_LIQUIDITY_ROLE)
     {
         if(tokenSupplies[_token] == 0) revert NotExistToken(_token);
         if(tokenStatus[_token] != TokenStatus.Presale) revert InvalidTokenStatus(_token);
@@ -166,7 +166,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         external
         nonReentrant
         whenNotPaused
-        onlyAirdropAdmin
+        onlyRole(AIRDROP_ADMIN_ROLE)
     {
         if(_tos.length <= 0) revert InvalidArrayLength();
         if(tokenStatus[_token] != TokenStatus.AddedLiquidity) revert InvalidTokenStatus(_token);
@@ -207,7 +207,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         external
         nonReentrant
         whenNotPaused
-        onlyRefundAdmin
+        onlyRole(REFUND_ADMIN_ROLE)
     {
         if(tokenSupplies[_token] == 0) revert NotExistToken(_token);
         if(_tos.length == 0 || _tos.length != _amounts.length) revert InvalidArrayLength();
