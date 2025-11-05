@@ -214,6 +214,13 @@ contract UniswapV4 {
         }
     }
 
+    /// @notice Calculate sqrt prices for Uniswap V4 pool based on token amounts and token order
+    /// @dev This function calculates the square root prices for both token orderings (token0 first and token1 first)
+    /// @param fundingTokenAmount Amount of funding token
+    /// @param tokenAmount Amount of new token
+    /// @param fundingTokenIsToken0 Boolean indicating if funding token is token0
+    /// @return sqrtPriceFundingTokenFirst Square root price when funding token is first (token0)
+    /// @return sqrtPriceTokenFirst Square root price when new token is first (token0)
     function _calculateSqrtPrices(
         uint256 fundingTokenAmount,
         uint256 tokenAmount,
@@ -226,25 +233,30 @@ contract UniswapV4 {
         if (fundingTokenAmount == 0 || tokenAmount == 0) revert("Amounts must be positive");
 
         if (fundingTokenIsToken0) {
-            // [IF 块] fundingToken是token0 (T0)，token是token1 (T1)
+            // [IF block] fundingToken is token0 (T0), token is token1 (T1)
 
-            // sqrtPriceFundingTokenFirst (T0 优先): P = T1/T0
+            // sqrtPriceFundingTokenFirst (T0 first): P = T1/T0
             sqrtPriceFundingTokenFirst = encodePriceSqrt(tokenAmount, fundingTokenAmount);
-            // 期望返回值792...就是这个值 (如果 T0 是 199... 且 T1 是 200...)
+            // Expected return value 792... is this value (if T0 is 199... and T1 is 200...)
 
-            // sqrtPriceTokenFirst (T1 优先): P = T0/T1
+            // sqrtPriceTokenFirst (T1 first): P = T0/T1
             sqrtPriceTokenFirst = encodePriceSqrt(fundingTokenAmount, tokenAmount);
         } else {
-            // [ELSE 块] token是token0 (T0)，fundingToken是token1 (T1)
+            // [ELSE block] token is token0 (T0), fundingToken is token1 (T1)
 
-            // sqrtPriceTokenFirst (T0 优先): P = T1/T0
+            // sqrtPriceTokenFirst (T0 first): P = T1/T0
             sqrtPriceTokenFirst = encodePriceSqrt(fundingTokenAmount, tokenAmount);
 
-            // sqrtPriceFundingTokenFirst (T1 优先): P = T0/T1
-            sqrtPriceFundingTokenFirst = encodePriceSqrt(tokenAmount, fundingTokenAmount); // <-- 修正：赋值给 sqrtPriceFundingTokenFirst
+            // sqrtPriceFundingTokenFirst (T1 first): P = T0/T1
+            sqrtPriceFundingTokenFirst = encodePriceSqrt(tokenAmount, fundingTokenAmount); // <-- Fix: assign to sqrtPriceFundingTokenFirst
         }
     }
 
+    /// @notice Encode price ratio as square root price in Q64.96 format for Uniswap V4
+    /// @dev This function calculates the square root price from token reserves using Q192 format to avoid overflow
+    /// @param reserve1 Amount of token1 (numerator in price ratio)
+    /// @param reserve0 Amount of token0 (denominator in price ratio)
+    /// @return Square root price in Q64.96 format
     function encodePriceSqrt(uint256 reserve1, uint256 reserve0)
     internal
     pure
@@ -252,42 +264,42 @@ contract UniswapV4 {
     {
         if (reserve0 == 0) revert("Reserve0 must be positive");
 
-        // 关键修正：使用 Q128.128 格式进行安全计算
-        // 我们需要计算 sqrt(reserve1 / reserve0 * 2**192)
-        // 等价于 sqrt(reserve1 * (2**128 / reserve0) * 2**64)
+        // Key fix: Use Q128.128 format for safe calculation
+        // We need to calculate sqrt(reserve1 / reserve0 * 2**192)
+        // Equivalent to sqrt(reserve1 * (2**128 / reserve0) * 2**64)
 
-        // 1. 计算 (reserve1 * 2**128) / reserve0
-        // 将 reserve1 扩大 2**128 倍
+        // 1. Calculate (reserve1 * 2**128) / reserve0
+        // Scale reserve1 by 2**128
         uint256 ratioX128 = (reserve1 * (1 << 128)) / reserve0;
 
-        // 2. 将 ratioX128 再次扩大 2**64 倍，得到 Q192.64 格式
-        // 注意：我们将原本的 Q64.96 改为 Q192.64 来避免溢出，
-        // 但是这里需要保证 final sqrt(ratio) 的格式是 Q64.96，所以需要调整。
+        // 2. Scale ratioX128 by another 2**64 to get Q192.64 format
+        // Note: We changed from Q64.96 to Q192.64 to avoid overflow,
+        // but we need to ensure the final sqrt(ratio) is in Q64.96 format, so adjustment is needed.
 
-        // 标准 V3/V4 技巧：
-        // V3/V4 的价格是 Q64.96，价格平方是 Q128.192，再除以 2^96 得到 Q128.96 的平方。
-        // 我们需要计算 sqrt( (reserve1 / reserve0) * 2^192 )
+        // Standard V3/V4 technique:
+        // V3/V4 price is Q64.96, price squared is Q128.192, divided by 2^96 to get Q128.96 squared.
+        // We need to calculate sqrt( (reserve1 / reserve0) * 2^192 )
 
-        // 方法：先计算 Q96 比例，再计算 Q192 比例
+        // Method: First calculate Q96 ratio, then calculate Q192 ratio
         uint256 ratioX96 = (reserve1 << 96) / reserve0;
 
-        // ratioX96 是 Q0.96 格式的价格
+        // ratioX96 is price in Q0.96 format
         // ratioX192 = ratioX96 * 2^96 = ratioX96 << 96
 
-        // 检查 reserve1 << 96 是否溢出：
-        // reserve1 ≈ 2 * 10^26。 2^96 ≈ 8 * 10^28。 乘积 ≈ 1.6 * 10^55。
-        // 不会溢出 uint256。 因此，我们可以安全地使用 Q192 格式。
+        // Check if reserve1 << 96 overflows:
+        // reserve1 ≈ 2 * 10^26. 2^96 ≈ 8 * 10^28. Product ≈ 1.6 * 10^55.
+        // Will not overflow uint256. Therefore, we can safely use Q192 format.
 
         uint256 ratioX192;
         if (reserve1 > 0) {
-            // 避免 reserve1 << 192 直接溢出
-            // 拆分为： reserve1 * (2^96) * (2^96) / reserve0
-            // 即： ( (reserve1 << 96) / reserve0 ) << 96
+            // Avoid direct overflow of reserve1 << 192
+            // Split into: reserve1 * (2^96) * (2^96) / reserve0
+            // That is: ( (reserve1 << 96) / reserve0 ) << 96
 
-            // 步骤 A: 计算 Q96 比例
+            // Step A: Calculate Q96 ratio
             ratioX96 = (reserve1 << 96) / reserve0;
 
-            // 步骤 B: 转换为 Q192 比例
+            // Step B: Convert to Q192 ratio
             ratioX192 = ratioX96 << 96;
 
         } else {

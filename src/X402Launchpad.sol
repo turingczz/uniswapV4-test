@@ -9,11 +9,20 @@ import "./ERC3009Token.sol";
 import "./UniswapV4.sol";
 import "./X402LaunchpadCommon.sol";
 
+/**
+ * @title X402Launchpad
+ * @dev Main launchpad contract for token deployment, liquidity management, and airdrop functionality
+ * This contract handles the complete lifecycle of token launches including deployment,
+ * liquidity provisioning, airdrops, and refunds. It integrates with Uniswap V4 for liquidity management
+ * and follows the UUPS upgradeable pattern for future enhancements.
+ */
 contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
     using SafeERC20 for IERC20;
 
+    /// @notice Contract version identifier
     string public constant version = "1.0.0";
 
+    /// @notice Enum representing the different statuses a token can have in the launchpad
     enum TokenStatus {
         Presale, // 0
         AddedLiquidity, // 1
@@ -28,9 +37,10 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
     mapping(IERC20 => TokenParams) public params;
     mapping(IERC20 => uint256) public lpTokenIds;
     mapping(IERC20 => TokenStatus) public tokenStatus;
-    //合约不管理预售失败，只看成功发射的状态；第一次refund，就标识为refund；只有成功才能空投
-    mapping(IERC20 => mapping(address => bool)) public airdropped; //to是否空投
-    mapping(IERC20 => mapping(address => bool)) public refunded; //to是否退款
+
+    mapping(IERC20 => mapping(address => bool)) public airdropped;
+
+    mapping(IERC20 => mapping(address => bool)) public refunded;
 
     // Event definitions
     event Deploy(address msgSender, string symbol, IERC20 indexed token, uint256 timestamp, TokenParams p);
@@ -39,6 +49,13 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
     event Refund(IERC20 indexed token, IERC20 indexed fundingToken, address indexed to, uint256 amount);
     event SwapFeesCollected(IERC20 indexed _token, uint256 fundingSwapFee, uint256 tokenSwapFee);
 
+    /**
+     * @dev Constructor for X402Launchpad contract
+     * Initializes the Uniswap V4 integration and disables initializers for upgradeable pattern
+     * @param _poolManger Address of the Uniswap V4 Pool Manager contract
+     * @param _positionManger Address of the Uniswap V4 Position Manager contract
+     * @param _permit2 Address of the Permit2 contract for token approvals
+     */
     constructor(
         address _poolManger,
         address _positionManger,
@@ -49,10 +66,26 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         _disableInitializers();
     }
 
+    /**
+     * @dev Initializes the contract with the specified owner
+     * Sets up the upgradeable contract with initial ownership
+     * @param _initialOwner Address of the initial contract owner
+     */
     function initialize(address _initialOwner) public override initializer {
         super.initialize(_initialOwner);
     }
 
+    /**
+     * @dev Deploys a new token and sets up the initial pool configuration
+     * Creates a new ERC3009 token, calculates liquidity parameters, and initializes the Uniswap pool
+     * Can only be called by the token admin when contract is not paused
+     * @param _name Name of the new token
+     * @param _symbol Symbol of the new token
+     * @param _decimals Number of decimals for the token
+     * @param _cap Total supply cap of the token
+     * @param _fundingToken Address of the funding token (e.g., USDC, USDT)
+     * @param _fundingAmount Amount of funding token for liquidity
+     */
     function deploy(
         string memory _name,
         string memory _symbol,
@@ -70,8 +103,8 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         if(tokens[_symbol] != IERC20(address(0))) revert AlreadyTokenExists(_symbol);
 
         IERC20 token = IERC20(new ERC3009Token(_name, _symbol, _cap, _decimals));
-        uint256 tokenAddLiquidity = _cap * tokenAddLiquidityRate / SCALE_FACTOR; //20%
-        uint256 fundingTokenAddLiquidity = _fundingAmount; //x402已经支付了fee 5%
+        uint256 tokenAddLiquidity = _cap * tokenAddLiquidityRate / SCALE_FACTOR; // 20% of total supply for liquidity
+        uint256 fundingTokenAddLiquidity = _fundingAmount; // x402 has already paid 5% fee
         bool fundingTokenIsToken0 = address(_fundingToken) < address(token);
 
         TokenParams memory p = TokenParams({
@@ -96,6 +129,12 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         params[token] = p;
     }
 
+    /**
+     * @dev Adds liquidity to the token's Uniswap pool
+     * Transfers funding tokens and deploys liquidity to the Uniswap pool
+     * Can only be called by the liquidity admin when contract is not paused and token is in presale status
+     * @param _token Address of the token to add liquidity for
+     */
     function addLiquidity(IERC20 _token) external nonReentrant whenNotPaused {
         if(msg.sender != addLiquidityAdmin) revert NotAdmin("add liquidity admin");
         if(tokenStatus[_token] != TokenStatus.Presale) revert InvalidTokenStatus(_token);
@@ -108,7 +147,14 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         emit LiquidityAdded(msg.sender, _token, lpTokenIds[_token], block.timestamp);
     }
 
-    //空投，打满添加流动性后，官方会发放80%的代币给用户
+    /**
+     * @dev Batch airdrop tokens to multiple users
+     * After liquidity is fully added, the official will distribute 80% of tokens to users
+     * Can only be called by the airdrop admin when contract is not paused and token has liquidity
+     * @param _token Address of the token to airdrop
+     * @param _tos Array of recipient addresses
+     * @param _amount Amount of tokens to airdrop to each recipient
+     */
     function batchAirdrop(
         IERC20 _token,
         address[] calldata _tos,
@@ -127,17 +173,29 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         }
     }
 
+    /**
+     * @dev Internal function to airdrop tokens to a single user
+     * 1. The amount per user is determined when x402 payment is made
+     * 2. Tokens are already in the contract, so direct transfer is sufficient
+     * @param _token Address of the token to airdrop
+     * @param _to Recipient address
+     * @param _amount Amount of tokens to airdrop
+     */
     function _airdrop(IERC20 _token, address _to, uint256 _amount) internal {
         if (airdropped[_token][_to]) revert AlreadyAirdropped(_to);
         airdropped[_token][_to] = true;
 
-        //1.单个用户amount是x402支付的时候就确定的
-        //2.token本身就在合约中，直接转移则ok
         _token.safeTransfer(_to, _amount);
         emit Airdropped(msg.sender, _token, _to, _amount);
     }
 
-    //退款，只能在结束时间之后，官方调用
+    /**
+     * @dev Batch refund funding tokens to multiple users
+     * Can only be called after the end time by the official
+     * @param _token Address of the token to process refunds for
+     * @param _tos Array of recipient addresses
+     * @param _amount Amount of funding tokens to refund to each recipient
+     */
     function batchRefund(
         IERC20 _token,
         address[] calldata _tos,
@@ -157,6 +215,12 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         }
     }
 
+    /**
+     * @dev Internal function to refund funding tokens to a single user
+     * @param _token Address of the token to process refund for
+     * @param _to Recipient address
+     * @param _amount Amount of funding tokens to refund
+     */
     function _refund(IERC20 _token, address _to, uint256 _amount) internal {
         if (refunded[_token][_to]) revert AlreadyRefunded(_to);
         refunded[_token][_to] = true;
@@ -165,7 +229,11 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         emit Refund(_token, fundingTokens[_token], _to, _amount);
     }
 
-    //手动操作，收集手续费用
+    /**
+     * @dev Manually collect swap fees from the liquidity pool
+     * Collects accumulated swap fees and transfers them to the designated fee recipient
+     * @param _token Address of the token to collect fees for
+     */
     function collectSwapFees(IERC20 _token) external nonReentrant {
         if(address(_token) == address(0)) revert ZeroAddress("token");
         uint256 lpTokenId = lpTokenIds[_token];

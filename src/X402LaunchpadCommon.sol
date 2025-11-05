@@ -8,10 +8,10 @@ import { Initializable } from "@openzeppelin/contracts-upgradeable/proxy/utils/I
 import {stdError} from "forge-std/StdError.sol";
 
 /**
- * @title Common
- * @dev Base contract for BTC staking functionality
- * Provides common staking logic, period management, pause controls, and upgradeability
- * This contract is designed to be inherited by specific staking implementations
+ * @title X402LaunchpadCommon
+ * @dev Base contract for X402 launchpad functionality
+ * Provides common launchpad logic, admin management, pause controls, and upgradeability
+ * This contract is designed to be inherited by the main X402Launchpad contract
  */
 contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
     uint256 public constant SCALE_FACTOR = 1e6;
@@ -154,9 +154,9 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
     }
 
     /**
-     * @dev Sets the payment token address
-     * Payment token is used for swaps and airdrops
-     * @param _account Address of the payment token
+     * @dev Sets the funding collect address
+     * Funding collect address is used to collect funding tokens for liquidity
+     * @param _account Address of the funding collect address
      */
     function setFundingCollectAddress(address _account) public onlyOwner {
         if (_account == address(0)) revert ZeroAddress("set fundingCollectAddress");
@@ -179,7 +179,7 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
 
     /**
      * @dev Sets the swap fee rate
-     * Swap fee rate is expressed in basis points (1e18 = 100%)
+     * Swap fee rate is expressed in basis points (1e6 = 100%)
      * @param _rate Swap fee rate in basis points
      */
     function setSwapFeeRate(uint24 _rate) public onlyOwner {
@@ -189,9 +189,9 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
     }
 
     /**
-     * @dev Sets the token add rate
-     * Token add rate is expressed in basis points (1e18 = 100%)
-     * @param _rate Token add rate in basis points
+     * @dev Sets the token add liquidity rate
+     * Token add liquidity rate is expressed in basis points (1e6 = 100%)
+     * @param _rate Token add liquidity rate in basis points
      */
     function setTokenAddLiquidityRate(uint256 _rate) public onlyOwner {
         uint256 oldTokenAddLiquidityRate = tokenAddLiquidityRate;

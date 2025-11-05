@@ -63,15 +63,6 @@ contract ERC3009Token is ERC20, ERC20Burnable, ERC20Capped, EIP712 {
         _mint(msg.sender, __cap);
     }
 
-    // -------------------------
-    // EIP-3009 public interface
-    // -------------------------
-
-    /// @notice EIP-712 domain separator (for compatibility with offchain tooling)
-    function DOMAIN_SEPARATOR() external view returns (bytes32) {
-        return _domainSeparatorV4();
-    }
-
     /// @notice Override _update to handle capped token transfers
     /// @param from The sender address
     /// @param to The recipient address
@@ -84,6 +75,15 @@ contract ERC3009Token is ERC20, ERC20Burnable, ERC20Capped, EIP712 {
     /// @return The number of decimals
     function decimals() public view virtual override returns (uint8) {
         return _decimals;
+    }
+
+    // -------------------------
+    // EIP-3009 public interface
+    // -------------------------
+
+    /// @notice EIP-712 domain separator (for compatibility with offchain tooling)
+    function DOMAIN_SEPARATOR() external view returns (bytes32) {
+        return _domainSeparatorV4();
     }
 
     /// @notice Returns authorization state for a given authorizer & nonce.
