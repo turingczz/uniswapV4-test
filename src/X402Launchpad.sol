@@ -4,7 +4,6 @@ pragma solidity ^0.8.28;
 pragma abicoder v2;
 
 import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./ERC3009Token.sol";
 import "./UniswapV4.sol";
 import "./X402LaunchpadCommon.sol";
@@ -97,7 +96,10 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         whenNotPaused
         onlyCreateTokenAdmin
     {
+        if(bytes(_name).length == 0) revert ZeroValue("name");
+        if(bytes(_symbol).length == 0) revert ZeroValue("symbol");
         if(_cap == 0) revert ZeroValue("cap");
+        if(fundingTokens[_fundingToken] == IERC20(address(0))) revert ZeroAddress("fundingToken");
         if(_fundingAmount == 0) revert ZeroValue("fundingAmount");
         if(tokens[_symbol] != IERC20(address(0))) revert AlreadyTokenExists(_symbol);
 
@@ -239,6 +241,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
      * @param _token Address of the token to collect fees for
      */
     function collectSwapFees(IERC20 _token) external nonReentrant {
+        if(tokenStatus[_token] != TokenStatus.AddedLiquidity) revert InvalidTokenStatus(_token);
         uint256 lpTokenId = lpTokenIds[_token];
         if(lpTokenId == 0) revert ZeroValue("lpTokenId");
 
