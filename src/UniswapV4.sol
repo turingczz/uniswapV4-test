@@ -270,7 +270,7 @@ contract UniswapV4 {
 
         // 1. Calculate (reserve1 * 2**128) / reserve0
         // Scale reserve1 by 2**128
-        uint256 ratioX128 = (reserve1 * (1 << 128)) / reserve0;
+        // uint256 ratioX128 = (reserve1 * (1 << 128)) / reserve0;
 
         // 2. Scale ratioX128 by another 2**64 to get Q192.64 format
         // Note: We changed from Q64.96 to Q192.64 to avoid overflow,

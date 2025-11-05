@@ -37,9 +37,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
     mapping(IERC20 => TokenParams) public params;
     mapping(IERC20 => uint256) public lpTokenIds;
     mapping(IERC20 => TokenStatus) public tokenStatus;
-
     mapping(IERC20 => mapping(address => bool)) public airdropped;
-
     mapping(IERC20 => mapping(address => bool)) public refunded;
 
     // Event definitions
@@ -97,8 +95,8 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         external
         nonReentrant
         whenNotPaused
+        onlyCreateTokenAdmin
     {
-        if(msg.sender != createTokenAdmin) revert NotAdmin("token admin");
         if(_cap <= 0 || _fundingAmount <= 0) revert ZeroValue("Invalid cap, fundingAmount");
         if(tokens[_symbol] != IERC20(address(0))) revert AlreadyTokenExists(_symbol);
 
@@ -135,10 +133,13 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
      * Can only be called by the liquidity admin when contract is not paused and token is in presale status
      * @param _token Address of the token to add liquidity for
      */
-    function addLiquidity(IERC20 _token) external nonReentrant whenNotPaused {
-        if(msg.sender != addLiquidityAdmin) revert NotAdmin("add liquidity admin");
+    function addLiquidity(IERC20 _token)
+        external
+        nonReentrant
+        whenNotPaused
+        onlyAddLiquidityAdmin
+    {
         if(tokenStatus[_token] != TokenStatus.Presale) revert InvalidTokenStatus(_token);
-
         TokenParams storage p = params[_token];
         tokenStatus[_token] = TokenStatus.AddedLiquidity;
 
@@ -163,8 +164,8 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         external
         nonReentrant
         whenNotPaused
+        onlyAirdropAdmin
     {
-        if(msg.sender != airdropAdmin) revert NotAdmin("airdrop admin");
         if(_tos.length <= 0) revert InvalidArrayLength();
         if(tokenStatus[_token] != TokenStatus.AddedLiquidity) revert InvalidTokenStatus(_token);
 
@@ -194,24 +195,24 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
      * Can only be called after the end time by the official
      * @param _token Address of the token to process refunds for
      * @param _tos Array of recipient addresses
-     * @param _amount Amount of funding tokens to refund to each recipient
+     * @param _amounts Array of funding tokens
      */
     function batchRefund(
         IERC20 _token,
         address[] calldata _tos,
-        uint256 _amount
+        uint256[] calldata _amounts
     )
         external
         nonReentrant
         whenNotPaused
+        onlyRefundAdmin
     {
-        if(msg.sender != refundAdmin) revert NotAdmin("refund admin");
-        if(_tos.length <= 0) revert InvalidArrayLength();
+        if(_tos.length <= 0 || _tos.length != _amounts.length) revert InvalidArrayLength();
         if(tokenStatus[_token] != TokenStatus.Presale && tokenStatus[_token] != TokenStatus.Refund) revert InvalidTokenStatus(_token);
 
         if (tokenStatus[_token] == TokenStatus.Presale) tokenStatus[_token] = TokenStatus.Refund;
         for (uint256 i = 0; i < _tos.length; i++) {
-            _refund(_token, _tos[i], _amount);
+            _refund(_token, _tos[i], _amounts[i]);
         }
     }
 

@@ -15,9 +15,14 @@ import {stdError} from "forge-std/StdError.sol";
  */
 contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
     uint256 public constant SCALE_FACTOR = 1e6;
-    uint256 private _nonReentrantStatus;
-    address public pauseAdmin;
+    uint24 public constant DEFAULT_SWAP_FEE_RATE = 3000; // 0.3%
+    uint24 public constant TICK_SPACING = 60;
+    uint32 public constant DEFAULT_TOKEN_ADD_LIQUIDITY_RATE = 200_000; // 20%
+
+
+    uint8 private _nonReentrantStatus;
     bool public paused;
+    address public pauseAdmin;
 
     address public createTokenAdmin;
     address public addLiquidityAdmin;
@@ -25,8 +30,8 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
     address public refundAdmin;
     address public fundingCollectAddress;
     address public swapFeeTo;
-    uint24 public swapFeeRate; //default 3000 0.3% 标准交易对（最常用）
-    uint256 public tokenAddLiquidityRate; //default 200000 20%
+    uint24 public swapFeeRate; //default 3000 0.3%
+    uint32 public tokenAddLiquidityRate; //default 200000 20%
 
     uint256[50] __commGap;
 
@@ -35,6 +40,26 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
         _nonReentrantStatus = 1;
         _;
         _nonReentrantStatus = 0;
+    }
+
+    modifier onlyCreateTokenAdmin() {
+        if(msg.sender != createTokenAdmin) revert NotAdmin("create token admin");
+        _;
+    }
+
+    modifier onlyAddLiquidityAdmin() {
+        if(msg.sender != addLiquidityAdmin) revert NotAdmin("add liquidity admin");
+        _;
+    }
+
+    modifier onlyAirdropAdmin() {
+        if(msg.sender != airdropAdmin) revert NotAdmin("airdrop admin");
+        _;
+    }
+
+    modifier onlyRefundAdmin() {
+        if(msg.sender != refundAdmin) revert NotAdmin("refund admin");
+        _;
     }
 
     /**
@@ -91,8 +116,8 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
         refundAdmin = _refundAdmin;
         fundingCollectAddress = _fundingCollectAddress;
         swapFeeTo = _swapFeeTo;
-        swapFeeRate = 3000; //default 0.3%
-        tokenAddLiquidityRate = 200_000; //default 20%
+        swapFeeRate = DEFAULT_SWAP_FEE_RATE; //default 0.3%
+        tokenAddLiquidityRate = DEFAULT_TOKEN_ADD_LIQUIDITY_RATE; //default 20%
 
         emit InitConfig(
             msg.sender,
@@ -193,8 +218,8 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
      * Token add liquidity rate is expressed in basis points (1e6 = 100%)
      * @param _rate Token add liquidity rate in basis points
      */
-    function setTokenAddLiquidityRate(uint256 _rate) public onlyOwner {
-        uint256 oldTokenAddLiquidityRate = tokenAddLiquidityRate;
+    function setTokenAddLiquidityRate(uint32 _rate) public onlyOwner {
+        uint32 oldTokenAddLiquidityRate = tokenAddLiquidityRate;
         tokenAddLiquidityRate = _rate;
         emit TokenAddLiquidityRateChanged(msg.sender, oldTokenAddLiquidityRate, tokenAddLiquidityRate);
     }
@@ -255,7 +280,7 @@ contract X402LaunchpadCommon is OwnableUpgradeable, UUPSUpgradeable {
     event SwapFeeToChanged(address adminSetter, address oldSwapFeeTo, address newSwapFeeTo);
     event SwapFeeRateChanged(address adminSetter, uint24 oldSwapFeeRate, uint24 newSwapFeeRate);
     event TokenAddLiquidityRateChanged(
-        address adminSetter, uint256 oldTokenAddLiquidityRate, uint256 newTokenAddLiquidityRate
+        address adminSetter, uint32 oldTokenAddLiquidityRate, uint32 newTokenAddLiquidityRate
     );
     event InitConfig(
         address adminSetter,

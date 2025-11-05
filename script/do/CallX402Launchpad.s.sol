@@ -220,7 +220,7 @@ contract CallX402Launchpad is Script {
     }
 
     // 查询合约状态
-    function queryContractState() public {
+    function queryContractState() public view {
         console.log("\n=== Current Contract State ===");
         console.log("Proxy Address:", proxyAddress);
         console.log("Contract Version:", x402Launchpad.version());
