@@ -99,7 +99,7 @@ contract X402Launchpad is X402LaunchpadCommon, UniswapV4 {
         if(bytes(_name).length == 0) revert ZeroValue("name");
         if(bytes(_symbol).length == 0) revert ZeroValue("symbol");
         if(_cap == 0) revert ZeroValue("cap");
-        if(fundingTokens[_fundingToken] == IERC20(address(0))) revert ZeroAddress("fundingToken");
+        if(_fundingToken == IERC20(address(0))) revert ZeroAddress("fundingToken");
         if(_fundingAmount == 0) revert ZeroValue("fundingAmount");
         if(tokens[_symbol] != IERC20(address(0))) revert AlreadyTokenExists(_symbol);
 

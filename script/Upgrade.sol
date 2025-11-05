@@ -35,6 +35,6 @@ contract Upgrade is Script {
 forge script script/Upgrade.sol:Upgrade \
     --rpc-url=sepolia \
     --broadcast \
-    --legacy --verify
+    --legacy
 
 */
